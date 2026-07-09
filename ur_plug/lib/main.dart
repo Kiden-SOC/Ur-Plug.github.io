@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'views/auth/login_screen.dart'; 
 
 void main() {
   runApp(const UrPlugApp());
@@ -13,18 +14,15 @@ class UrPlugApp extends StatelessWidget {
       title: 'Ur Plug',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0066FF),
+          primary: const Color(0xFF0066FF),
+        ),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Ur Plug Mobile App\nReady for Tuesday! 🚀',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      // Set the LoginScreen as the starting point of the application
+      home: const LoginScreen(),
     );
   }
 }
