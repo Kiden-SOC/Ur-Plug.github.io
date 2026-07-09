@@ -22,7 +22,7 @@ class MatchingService {
     if (providers.isEmpty) {
       QuerySnapshot fallbackSnapshot = await _firestore
           .collection('providers')
-          .where(' businessCategory', isEqualTo:  businessCategory)
+          .where('businessCategory', isEqualTo:  businessCategory)
           .where('available', isEqualTo: true)
           .get();
 
@@ -61,12 +61,10 @@ class MatchingService {
     }
 
     if ((provider['town'] ?? '').toString().toLowerCase() ==
-        usertown.toLowerCase()) {
+        town.toLowerCase()) {
       score += 15;
     }
 
-   ;
-    }
 
     score += ((provider['rating'] ?? 0).toDouble()) * 5;
 
