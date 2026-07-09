@@ -1,0 +1,5 @@
+ASSIGNEES: Kiden & David (Frontend)
+TASKS TO COMPETE HERE:
+1. Build the Chat List Inbox UI (Shows ongoing chat threads with the plug's profile picture, name, and last message snippet).
+2. Build the Live Chat Bubble Window UI (WhatsApp-style scrolling interface for real-time negotiations).
+3. Hook these layouts to the live message streams built by Patience.

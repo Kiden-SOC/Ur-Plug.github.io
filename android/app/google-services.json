@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "11453073530",
+    "project_id": "urplug-ade39",
+    "storage_bucket": "urplug-ade39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:11453073530:android:4466de2b64375eea3bd3c3",
+        "android_client_info": {
+          "package_name": "com.example.ur_plug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5Dt-3_NyeHIkzew1jbB2wmh8KhXTfOqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

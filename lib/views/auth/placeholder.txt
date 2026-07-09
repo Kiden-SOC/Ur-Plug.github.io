@@ -1,0 +1,7 @@
+ASSIGNEE: Kiden (Frontend)
+TASKS TO COMPETE HERE:
+1. Build the Phone Number Input screen UI (Clean layout with Ugandan country code +256 selection).
+2. Build the OTP Verification screen UI (Grid inputs for the 6-digit verification code, resend countdown timer).
+3. Build the User Registration Form UI (Fields for Full Name, Phone, and District/Town dropdowns).
+4. Connect your text fields and buttons to the Auth Service functions created by Jessie.
+
