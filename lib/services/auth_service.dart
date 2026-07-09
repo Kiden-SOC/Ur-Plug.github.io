@@ -17,45 +17,53 @@ class AuthService {
     String? businessName,
     String? businessCategory,
   }) async {
-    UserCredential credential = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    String uid = credential.user!.uid;
-
-    UserModel newUser = UserModel(
-        uid: uid,
-        fullName: fullName,
+    try {
+      UserCredential credential = await _auth.createUserWithEmailAndPassword(
         email: email,
-        contact: contact,
-        role: role,
-        district: district,
-        town: town,
-        createdAt: DateTime.now(),
-        profileComplete: true
-    );
+        password: password,
+      );
 
-    await _firestore.collection('users').doc(uid).set(newUser.toMap());
+      String uid = credential.user!.uid;
 
-    if (role == 'producer') {
-      await _firestore.collection('providers').doc(uid).set({
-        'businessName': businessName ?? '',
-        'businessCategory': businessCategory ?? '',
-        'rating': 0,
-        'completedJobs': 0,
-        'createdAt': DateTime.now(),
-      });
+      UserModel newUser = UserModel(
+          uid: uid,
+          fullName: fullName,
+          email: email,
+          contact: contact,
+          role: role,
+          district: district,
+          town: town,
+          createdAt: DateTime.now(),
+          profileComplete: true
+      );
+
+      await _firestore.collection('users').doc(uid).set(newUser.toMap());
+
+      if (role == 'producer') {
+        await _firestore.collection('providers').doc(uid).set({
+          'businessName': businessName ?? '',
+          'businessCategory': businessCategory ?? '',
+          'rating': 0,
+          'completedJobs': 0,
+          'createdAt': DateTime.now(),
+        });
+      }
+      return newUser;
+    } on FirebaseAuthException catch (e) {
+      throw _mapAuthError(e);
     }
-    return newUser;
   }
 
   Future<User?> login({required String email, required String password}) async {
-    UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password
-    );
-    return result.user;
+    try {
+      UserCredential result = await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password
+      );
+      return result.user;
+    } on FirebaseAuthException catch(e) {
+      throw _mapAuthError(e);
+    }
   }
 
   Future<void> resetPassword(String email) async {
@@ -64,5 +72,23 @@ class AuthService {
 
   Future<void> logout() async {
     await _auth.signOut();
+  }
+}
+String _mapAuthError(FirebaseAuthException e) {
+  switch (e.code) {
+    case 'email-already-in-use':
+      return 'An account already exists with that email.';
+    case 'invalid-email':
+      return 'That email address looks invalid.';
+    case 'weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'user-not-found':
+      return 'No account found with that email.';
+    case 'wrong-password':
+      return 'Incorrect password.';
+    case 'too-many-requests':
+      return 'Too many attempts. Try again later.';
+    default:
+      return 'Something went wrong. Please try again.';
   }
 }
