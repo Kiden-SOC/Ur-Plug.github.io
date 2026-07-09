@@ -43,8 +43,11 @@ class AuthService {
         await _firestore.collection('providers').doc(uid).set({
           'businessName': businessName ?? '',
           'businessCategory': businessCategory ?? '',
+          'district': district,
+          'town': town,
           'rating': 0,
           'completedJobs': 0,
+          'available': true,
           'createdAt': DateTime.now(),
         });
       }
