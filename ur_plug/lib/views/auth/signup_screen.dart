@@ -35,8 +35,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _businessEmailController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _businessPhoneController = TextEditingController();
-  final _customerLandmarkController = TextEditingController();
-  final _businessLandmarkController = TextEditingController();
+  final _customerTownController = TextEditingController();
+  final _businessTownController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -61,8 +61,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _businessEmailController.dispose();
     _customerPhoneController.dispose();
     _businessPhoneController.dispose();
-    _customerLandmarkController.dispose();
-    _businessLandmarkController.dispose();
+    _customerTownController.dispose();
+    _businessTownController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -274,9 +274,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 _buildSearchableDistrictField(),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _customerLandmarkController,
-                  decoration: const InputDecoration(labelText: 'Nearest Landmark', border: OutlineInputBorder(), prefixIcon: Icon(Icons.landscape)),
-                  validator: (v) => v!.isEmpty ? 'Please provide a close landmark' : null,
+                  controller: _customerTownController,
+                  decoration: const InputDecoration(labelText: 'Town', border: OutlineInputBorder(), prefixIcon: Icon(Icons.landscape)),
+                  validator: (v) => v!.isEmpty ? 'Please provide your current town' : null,
                 ),
                 const SizedBox(height: 16),
                 
@@ -338,9 +338,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const SizedBox(height: 16),
                 TextFormField(
-                  controller: _businessLandmarkController,
-                  decoration: const InputDecoration(labelText: 'Nearest Business Landmark', border: OutlineInputBorder(), prefixIcon: Icon(Icons.pin_drop)),
-                  validator: (v) => v!.isEmpty ? 'Please specify your location marker' : null,
+                  controller: _businessTownController,
+                  decoration: const InputDecoration(labelText: 'Town', border: OutlineInputBorder(), prefixIcon: Icon(Icons.pin_drop)),
+                  validator: (v) => v!.isEmpty ? 'Please specify your town.' : null,
                 ),
               ],
               const SizedBox(height: 16),
