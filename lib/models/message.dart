@@ -19,8 +19,6 @@ class Message {
     required this.isRead,
   });
 
-  // Parses a message from a REST API response, e.g.
-  // GET /api/messaging/conversations/{id}/messages/
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'],
@@ -33,8 +31,7 @@ class Message {
     );
   }
 
-  // Parses a message pushed over the WebSocket, e.g.
-  // { "type": "chat_message", "message_id": 13, "sender_id": 7, ... }
+  
   factory Message.fromSocketJson(Map<String, dynamic> json, int conversationId) {
     return Message(
       id: json['message_id'],
