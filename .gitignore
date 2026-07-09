@@ -1,4 +1,8 @@
 *~
 .DS_Store
 .idea/
-
+build/
+.dart_tool/
+*.iml
+.flutter-plugins-dependencies
+Ur-Plug.github.io/

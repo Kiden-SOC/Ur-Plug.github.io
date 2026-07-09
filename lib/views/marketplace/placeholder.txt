@@ -1,0 +1,6 @@
+ASSIGNEE: David (Frontend)
+TASKS TO COMPETE HERE:
+1. Build the Main Marketplace Feed UI (Top search bar, category filter grids like Agribusiness, Electronics).
+2. Build the Advanced Filter Pop-up Sheet (UI elements to filter by price ranges, seller star-ratings, and districts).
+3. Build the Commodity Detail Screen (Photo carousel, description layout, and high-visibility "Call Plug" and "Text Plug" buttons).
+4. Fetch live data into these layouts using Eleanor's Firestore query services.
