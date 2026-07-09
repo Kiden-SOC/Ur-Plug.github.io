@@ -4,15 +4,14 @@ class MatchingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<QueryDocumentSnapshot>> searchProviders({
-    required String business category,
+    required String businessCategory, // Fixed: Removed space in parameter name
     required String district,
     required String town,
   }) async {
 
-
     QuerySnapshot snapshot = await _firestore
         .collection('providers')
-        .where(' business category', isEqualTo:  business category)
+        .where('business category', isEqualTo: businessCategory) // Fixed space
         .where('district', isEqualTo: district)
         .where('available', isEqualTo: true)
         .get();
@@ -22,7 +21,7 @@ class MatchingService {
     if (providers.isEmpty) {
       QuerySnapshot fallbackSnapshot = await _firestore
           .collection('providers')
-          .where(' business category', isEqualTo:  business category)
+          .where('business category', isEqualTo: businessCategory) // Fixed space
           .where('available', isEqualTo: true)
           .get();
 
@@ -61,12 +60,11 @@ class MatchingService {
     }
 
     if ((provider['town'] ?? '').toString().toLowerCase() ==
-        usertown.toLowerCase()) {
+        town.toLowerCase()) { // Fixed: Changed 'usertown' to 'town'
       score += 15;
     }
 
-   ;
-    }
+    // Fixed: Removed the broken, empty block containing a stray semicolon
 
     score += ((provider['rating'] ?? 0).toDouble()) * 5;
 
@@ -77,3 +75,4 @@ class MatchingService {
     return score;
   }
 }
+
