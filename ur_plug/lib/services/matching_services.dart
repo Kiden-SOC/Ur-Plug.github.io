@@ -4,16 +4,15 @@ class MatchingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<QueryDocumentSnapshot>> searchProviders({
-    required String service,
+    required String business category,
     required String district,
-    required String parish,
-    required String landmark,
+    required String town,
   }) async {
 
 
     QuerySnapshot snapshot = await _firestore
         .collection('providers')
-        .where('service', isEqualTo: service)
+        .where(' business category', isEqualTo:  business category)
         .where('district', isEqualTo: district)
         .where('available', isEqualTo: true)
         .get();
@@ -23,7 +22,7 @@ class MatchingService {
     if (providers.isEmpty) {
       QuerySnapshot fallbackSnapshot = await _firestore
           .collection('providers')
-          .where('service', isEqualTo: service)
+          .where(' business category', isEqualTo:  business category)
           .where('available', isEqualTo: true)
           .get();
 
@@ -34,15 +33,13 @@ class MatchingService {
       double scoreA = calculateScore(
         a.data() as Map<String, dynamic>,
         district,
-        parish,
-        landmark,
+        town,
       );
 
       double scoreB = calculateScore(
         b.data() as Map<String, dynamic>,
         district,
-        parish,
-        landmark,
+        town,
       );
 
       return scoreB.compareTo(scoreA);
@@ -54,8 +51,7 @@ class MatchingService {
   double calculateScore(
     Map<String, dynamic> provider,
     String userDistrict,
-    String userParish,
-    String userLandmark,
+    String town,
   ) {
     double score = 0;
 
@@ -64,14 +60,12 @@ class MatchingService {
       score += 20;
     }
 
-    if ((provider['parish'] ?? '').toString().toLowerCase() ==
-        userParish.toLowerCase()) {
-      score += 10;
+    if ((provider['town'] ?? '').toString().toLowerCase() ==
+        usertown.toLowerCase()) {
+      score += 15;
     }
 
-    if ((provider['landmark'] ?? '').toString().toLowerCase() ==
-        userLandmark.toLowerCase()) {
-      score += 5;
+   ;
     }
 
     score += ((provider['rating'] ?? 0).toDouble()) * 5;
