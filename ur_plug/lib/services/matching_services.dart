@@ -4,7 +4,7 @@ class MatchingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<QueryDocumentSnapshot>> searchProviders({
-    required String business category,
+    required String businessCategory,
     required String district,
     required String town,
   }) async {
@@ -12,7 +12,7 @@ class MatchingService {
 
     QuerySnapshot snapshot = await _firestore
         .collection('providers')
-        .where(' business category', isEqualTo:  business category)
+        .where(' businessCategory', isEqualTo:businessCategory)
         .where('district', isEqualTo: district)
         .where('available', isEqualTo: true)
         .get();
@@ -22,7 +22,7 @@ class MatchingService {
     if (providers.isEmpty) {
       QuerySnapshot fallbackSnapshot = await _firestore
           .collection('providers')
-          .where(' business category', isEqualTo:  business category)
+          .where(' businessCategory', isEqualTo:  businessCategory)
           .where('available', isEqualTo: true)
           .get();
 
