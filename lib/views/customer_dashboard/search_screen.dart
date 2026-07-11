@@ -448,7 +448,7 @@ class _AccountDetailsScreenPlaceholderState extends State<AccountDetailsScreenPl
   static const Color screenBackground = Color(0xFFE0F2F1);  
 
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'John Doe');
+  final _nameController = TextEditingController(text: 'Acen Sharon');
   final _phoneController = TextEditingController(text: '+256 701 234567');
   final _locationController = TextEditingController(text: 'Kirinya, Bweyogerere');
 
