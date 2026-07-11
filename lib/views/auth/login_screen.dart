@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart'; // Use your exact project folder structure here
+import 'package:ur_plug/views/customer_dashboard/search_screen.dart';
+import 'package:ur_plug/views/admin_dashboard/admin_screen.dart'; // Use your exact project folder structure heree
 
 
 // =========================================================================
@@ -30,50 +32,115 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showForgotPasswordDialog(BuildContext context) {
-                      final resetEmailController = TextEditingController();
+  // =========================================================================
+  // ROLE-BASED LOGIN REDIRECTION LOGIC
+  // =========================================================================
+  void _handleLogin() {
+    if (_loginFormKey.currentState!.validate()) {
+      final email = _emailController.text.trim().toLowerCase();
 
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Reset Password'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Enter your registered email address to receive a secure password reset link.'),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: resetEmailController,
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email Address',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                final email = resetEmailController.text.trim();
-                                if (email.isNotEmpty) {
-                                  Navigator.pop(context); // Close dialog
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Password reset link successfully sent to $email')),
-                                  );
-                                }
-                              },
-                              child: const Text('Send Reset Link'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
+
+      // This is perfect for testing your screens right now!
+      String userRole = 'customer'; // Default fallback
+
+      if (email == 'admin@urplug.com') {
+        userRole = 'admin';
+      } else if (email.contains('business')) {
+        userRole = 'business';
+      } else {
+        userRole = 'customer';
+      }
+
+      // Route the user cleanly based on their detected backend role
+      if (!mounted) return;
+      
+      if (userRole == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminScreen()),
+        );
+      } else if (userRole == 'customer') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
+        );
+      } else if (userRole == 'business') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingHistoryScreenPlaceholder()), // FIXED: Connects seamlessly to the helper placeholder now
+        );
+      }
+    }
+  }
+
+
+  // FIXED: Beautiful custom styled forgot password popup matching deep teal theme
+  void _showForgotPasswordDialog(BuildContext context) {
+    final resetEmailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Reset Password', 
+          style: TextStyle(fontWeight: FontWeight.bold, color: brandPrimary)
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your registered email address to receive a secure password reset link.',
+              style: TextStyle(color: Colors.black87, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 18),
+            TextFormField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                labelStyle: const TextStyle(color: brandPrimary),
+                prefixIcon: const Icon(Icons.email_outlined, color: brandPrimary),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: brandSecondary, width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: brandPrimary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final email = resetEmailController.text.trim();
+              if (email.isNotEmpty) {
+                Navigator.pop(context); // Close dialog safely
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Password reset link successfully sent to $email'),
+                    backgroundColor: brandSecondary,
+                  ),
+                );
+              }
+            },
+            child: const Text('Send Reset Link', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,9 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-
-                    // Central Card Frame
-                    Container(
+                                        Container(
                       padding: const EdgeInsets.all(28.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -231,22 +296,22 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
-                                prefixIcon: Icon(Icons.lock_outlined, color: brandPrimary),
+                                prefixIcon: const Icon(Icons.lock_outlined, color: brandPrimary),
                                 filled: true,
                                 fillColor: screenBackground,
-                                border: OutlineInputBorder(
+                                border: const OutlineInputBorder(
                                   borderRadius: BorderRadius.all(Radius.circular(12)),
                                   borderSide: BorderSide.none,
                                 ),
-                                enabledBorder: OutlineInputBorder(
+                                enabledBorder: const OutlineInputBorder(
                                   borderRadius: BorderRadius.all(Radius.circular(12)),
                                   borderSide: BorderSide.none,
                                 ),
-                                focusedBorder: OutlineInputBorder(
+                                focusedBorder: const OutlineInputBorder(
                                   borderRadius: BorderRadius.all(Radius.circular(12)),
                                   borderSide: BorderSide(color: brandPrimary, width: 1.5),
                                 ),
-                                labelStyle: TextStyle(color: brandPrimary, fontSize: 14),
+                                labelStyle: const TextStyle(color: brandPrimary, fontSize: 14),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscureLoginPassword ? Icons.visibility_off : Icons.visibility,
@@ -276,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   _showForgotPasswordDialog(context);
                                 },
-                                child: Text(
+                                child: const Text(
                                   'Forgot Password?',
                                   style: TextStyle(
                                     color: brandPrimary,
@@ -286,27 +351,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 16),
-
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 20), // FIXED: Consolidated nested heights safely
 
                             // Submit Action Button
                             ElevatedButton(
-                              onPressed: () {
-                                if (_loginFormKey.currentState!.validate()) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const DashboardScreen(), // Replace with your actual dashboard screen
-                                    ),
-                                  );
-                                }
-                              },
+                              onPressed: _handleLogin, // Calls role splitting routing setup
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: brandPrimary,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
                               ),
                               child: const Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             ),
@@ -314,8 +369,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
 
+                    const SizedBox(height: 24),
                     // No Account Sign Up Link Section
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -360,9 +415,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
 // =========================================================================
 // 2. VERIFICATION SCREEN WIDGET (Correctly Placed and Stored Cleanly)
+// =========================================================================
 class VerificationScreen extends StatefulWidget {
   final String email;
-  const VerificationScreen({super.key, required this.email});
+  final bool isbusiness; // Added to determine if the user is a business or customer
+  const VerificationScreen({super.key, required this.email, required this.isbusiness});
 
   @override
   State<VerificationScreen> createState() => _VerificationScreenState();
@@ -393,71 +450,102 @@ class _VerificationScreenState extends State<VerificationScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _otpFormKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(Icons.mark_email_unread_outlined, size: 80, color: brandPrimary),
-              const SizedBox(height: 24),
-              const Text(
-                'Check your email inbox',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: brandPrimary),
+        child: Center(
+          child: SingleChildScrollView( // FIXED: Prevents bottom overflow when keyboard opens to input OTP
+            child: Form(
+              key: _otpFormKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.mark_email_unread_outlined, size: 80, color: brandPrimary),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Check your email inbox',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: brandPrimary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'We sent a 6-digit dynamic login token to:\n${widget.email}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 40),
+                  TextFormField(
+                    controller: _otpController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4), // FIXED: Reduced letter-spacing value slightly so inputs remain centered perfectly inside the decoration canvas boundaries
+                    decoration: InputDecoration(
+                      labelText: 'Enter 6-Digit Code', 
+                      labelStyle: const TextStyle(fontSize: 14, letterSpacing: 0, color: brandPrimary), 
+                      filled: true, 
+                      fillColor: Colors.white, 
+                      alignLabelWithHint: true, // FIXED: Ensures the label animation transitions smoothly above centered text
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12), 
+                        borderSide: const BorderSide(color: brandPrimary, width: 2.0),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Please enter the code';
+                      }
+                      if (v.trim().length != 6) {
+                        return 'Please input a complete 6-digit code';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Cleaned up unified Submit Button
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_otpFormKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Connecting dashboard session...'),
+                            backgroundColor: brandPrimary,
+                          ),
+                        );
+
+                        bool isbusiness = widget.isbusiness; 
+
+                        if (!mounted) return;
+
+                        if (isbusiness) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const BusinessScreen()),
+                          );
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SearchScreen()),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandPrimary, 
+                      foregroundColor: Colors.white, 
+                      padding: const EdgeInsets.symmetric(vertical: 16), 
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text(
+                      'Confirm & Log In', 
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'We sent a 6-digit dynamic login token to:\n${widget.email}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 40),
-              TextFormField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
-                decoration:
-                    const InputDecoration(labelText: 'Enter 6-Digit Code', labelStyle: TextStyle(fontSize: 14, letterSpacing: 0, color: brandPrimary), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide(color: brandPrimary, width: 2.0),),),
-                validator:
-                    (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Please enter the code';
-                  }
-                  if (v.length != 6) {
-                    return 'Please input a complete 6-digit code';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed:
-                    () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:
-                        Text('Connecting dashboard session...'), backgroundColor:
-                        brandPrimary,),);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const DashboardScreen()),
-                    );
-                  },
-              
-                style:
-                    ElevatedButton.styleFrom(backgroundColor:
-                        brandPrimary, foregroundColor:
-                        Colors.white, padding:
-                        const EdgeInsets.symmetric(vertical:
-                            16), shape:
-                        RoundedRectangleBorder(borderRadius:
-                            BorderRadius.circular(12)),),
-                child:
-                    const Text('Confirm & Log In', style:
-                        TextStyle(fontSize:
-                            16, fontWeight:
-                            FontWeight.bold)),),
-            ],
+            ),
           ),
         ),
       ),
@@ -465,23 +553,30 @@ class _VerificationScreenState extends State<VerificationScreen> {
   }
 }
 
-//DASHBOARD SCREEN WIDGET (Placeholder for actual dashboard implementation)
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+// Quick compilation fallback widget for the business screen until your teammate pushes their changes
+class BusinessScreen extends StatelessWidget {
+  const BusinessScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE0F2F1), // Matches canvas theme color
       appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Business Dashboard', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: const Color(0xFF005F73),
+        foregroundColor: Colors.white,
       ),
       body: const Center(
-        child: Text(
-          'Welcome to the Dashboard!',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF005F73)),
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text(
+            'Business Dashboard coming soon!\nModule currently under active layout design by your project partner.', 
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.black54, fontSize: 14, height: 1.4),
+          ),
         ),
       ),
     );
   }
 }
+
