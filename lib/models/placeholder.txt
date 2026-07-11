@@ -1,7 +1,0 @@
-ASSIGNEES: Backend Team (Eleanor & Jessie)
-TASKS TO COMPETE HERE:
-1. Create 'user_model.dart' (Blueprint mapping Firebase UID, phone, name, district, and rating).
-2. Create 'commodity_model.dart' (Blueprint mapping product ID, seller ID, title, category, price, location, and array of image URLs).
-3. Create 'chat_model.dart' & 'message_model.dart' (Blueprints parsing message text, sender IDs, and timestamps).
-
-*Note: These blueprints convert raw Firestore Map data into clean, strongly-typed Flutter objects for Kiden and David to display easily in the UI.*
