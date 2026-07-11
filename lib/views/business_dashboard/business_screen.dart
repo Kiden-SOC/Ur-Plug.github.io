@@ -43,7 +43,7 @@ class BusinessScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24.0),
           child: Text(
-            'Business Dashboard Module\n\nCurrently under active layout design by your project partner.', 
+            'Business Dashboard Module\n\nCurrently under active layout design by David.', 
             textAlign: TextAlign.center,
             style: TextStyle(
               color: brandPrimary, 
