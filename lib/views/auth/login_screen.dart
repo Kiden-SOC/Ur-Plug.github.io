@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'signup_screen.dart'; // Use your exact project folder structure here
 import 'package:ur_plug/views/customer_dashboard/search_screen.dart';
 import 'package:ur_plug/views/admin_dashboard/admin_screen.dart'; // Use your exact project folder structure heree
+import 'package:ur_plug/views/business_dashboard/business_screen.dart'; // Use your exact project folder structure here
 
 
 // =========================================================================
@@ -67,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (userRole == 'business') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const BookingHistoryScreenPlaceholder()), // FIXED: Connects seamlessly to the helper placeholder now
+          MaterialPageRoute(builder: (context) => const BusinessScreen()), // FIXED: Connects seamlessly to the business screen now
         );
       }
     }
@@ -546,33 +547,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Quick compilation fallback widget for the business screen until your teammate pushes their changes
-class BusinessScreen extends StatelessWidget {
-  const BusinessScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE0F2F1), // Matches canvas theme color
-      appBar: AppBar(
-        title: const Text('Business Dashboard', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: const Color(0xFF005F73),
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text(
-            'Business Dashboard coming soon!\nModule currently under active layout design by your project partner.', 
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54, fontSize: 14, height: 1.4),
           ),
         ),
       ),
