@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../services/auth_service.dart';
 
 enum UserRole { customer, business }
 
@@ -14,6 +15,8 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _signUpFormKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  bool _isSubmitting = false;
   UserRole _selectedRole = UserRole.customer;
   String? _selectedBusinessCategory;
 
@@ -384,13 +387,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 40),
               
               ElevatedButton(
-                onPressed: () {
-                  if (_signUpFormKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Profile saved for $_selectedDistrict District!')),
-                    );
-                  }
-                },
+                onPressed: _isSubmitting
+                  ? null
+                  : () async {
+                      if (!_signUpFormKey.currentState!.validate()) return;
+
+                      setState(() => _isSubmitting = true);
+
+                      final role = _selectedRole == UserRole.customer ? 'consumer' : 'producer';
+
+                      try {
+                        await _authService.signUp(
+                          email: role == 'consumer'
+                              ? _customerEmailController.text.trim()
+                              :_businessEmailController.text.trim(),
+                          password: _passwordController.text,
+                          fullName: role == 'consumer'
+                              ? _fullNameController.text.trim()
+                              : _businessNameController.text.trim(),
+                          contact: role == 'consumer'
+                              ? _customerPhoneController.text.trim()
+                              : _businessPhoneController.text.trim(),
+                          role: role,
+                          district: _selectedDistrict ?? '',
+                          town: role == 'consumer'
+                              ? _customerTownController.text.trim()
+                              : _businessTownController.text.trim(),
+                          businessName: role == 'producer' ? _businessNameController.text.trim() : null,
+                          businessCategory: role == 'producer'
+                              ? (_isOtherCategorySelected
+                                ? _customCategoryController.text.trim()
+                                : _selectedBusinessCategory)
+                                : null,
+                        );
+
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Account created successfully!')),
+                        );
+
+
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        } finally {
+                          if (mounted) setState(() => _isSubmitting = false);
+                        }
+                      },
+
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF005f73),
                   foregroundColor: const Color(0xFF94D2BD),
@@ -399,7 +446,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                 ),
-                child: const Text('Complete Registration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20, width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2,color: Colors.white),
+                      )
+                    :const Text('Complete Registration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
