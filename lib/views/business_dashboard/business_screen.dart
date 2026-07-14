@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import '../auth/login_screen.dart'; // Adjust path directory depth based on your folder structure if needed
+import '../auth/login_screen.dart'; 
 
 class BusinessScreen extends StatelessWidget {
   const BusinessScreen({super.key});

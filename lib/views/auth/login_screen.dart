@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'signup_screen.dart'; 
+import 'signup_screen.dart'; // Use your exact project folder structure here
 import 'package:ur_plug/views/customer_dashboard/search_screen.dart';
-import 'package:ur_plug/views/admin_dashboard/admin_screen.dart'; 
-import 'package:ur_plug/views/business_dashboard/business_screen.dart'; 
-
+import 'package:ur_plug/views/admin_dashboard/admin_screen.dart'; // Use your exact project folder structure heree
+import 'package:ur_plug/views/business_dashboard/business_screen.dart'; // Use your exact project folder structure here
 
 
 // =========================================================================
@@ -554,4 +553,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 }
+
+
 

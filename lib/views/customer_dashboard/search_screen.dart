@@ -15,7 +15,8 @@ class _SearchScreenState extends State<SearchScreen> {
   static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise       
   static const Color screenBackground = Color(0xFFE0F2F1);  // Turquoise Ice Canvas
 
-  // Text processing controller for live filtering
+  // Bottom Navigation Index State
+  int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, dynamic>> _allProviders = [
@@ -31,6 +32,47 @@ class _SearchScreenState extends State<SearchScreen> {
     {'name': 'Carpenters', 'icon': Icons.chair},
     {'name': 'Catering & Decor', 'icon': Icons.local_pizza},
   ];
+
+     // Realistic mock tracking data for booking history
+  final List<Map<String, dynamic>> _bookingHistory = [
+    {
+      'provider': 'Sarah\'s Tech Sparks',
+      'category': 'Electrician',
+      'date': '12 July, 2026',
+      'rating': '4.9',
+      'status': 'Completed',
+      'icon': Icons.bolt,
+      'statusColor': Colors.green,
+    },
+    {
+      'provider': 'Kla Clean Plugs',
+      'category': 'Plumber',
+      'date': 'In Progress',
+      'rating': '',
+      'status': 'Active',
+      'icon': Icons.water_drop,
+      'statusColor': Colors.orange,
+    },
+    {
+      'provider': 'Kimuli Decorators',
+      'category': 'Event Decor',
+      'date': '04 June, 2026',
+      'rating': '5.0',
+      'status': 'Completed',
+      'icon': Icons.celebration,
+      'statusColor': Colors.green,
+    },
+    {
+      'provider': 'Express Repairs',
+      'category': 'Mechanic',
+      'date': '20 May, 2026',
+      'rating': '',
+      'status': 'Cancelled',
+      'icon': Icons.car_repair,
+      'statusColor': Colors.red,
+    },
+  ];
+
 
   // Dynamic filter lists initialized on startup
   List<Map<String, dynamic>> _filteredProviders = [];
@@ -72,12 +114,197 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  // Helper builder method to manage dynamic screen views
+
+  Widget _buildBodyContent() {
+    switch (_currentIndex) {
+      case 1:
+        return const AccountDetailsScreen();
+      case 2:
+        return  BookingHistoryScreen(bookings: _bookingHistory);
+      case 0:
+      default:
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Live Interactive Search Input Bar
+              TextField(
+                controller: _searchController,
+                onChanged: (value) => _runSearchFilter(value),
+                decoration: InputDecoration(
+                  hintText: 'Search services, providers...',
+                  hintStyle: TextStyle(color: brandPrimary.withValues(alpha: 0.5)),
+                  prefixIcon: const Icon(Icons.search, color: brandPrimary),
+                  suffixIcon: _searchController.text.isNotEmpty 
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: brandPrimary),
+                        onPressed: () {
+                          _searchController.clear();
+                          _runSearchFilter('');
+                        },
+                      )
+                    : null,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
+                'High Rated Services & Businesses',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
+              ),
+              const SizedBox(height: 12),
+
+              _filteredProviders.isEmpty 
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    child: Text('No providers match your search.', style: TextStyle(color: Colors.grey)),
+                  )
+                : SizedBox(
+                    height: 175,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _filteredProviders.length,
+                      itemBuilder: (context, index) {
+                        final provider = _filteredProviders[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProviderDetailScreen(providerName: provider['name']),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 155,
+                            margin: const EdgeInsets.only(right: 14, bottom: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                )
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 52,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: brandSecondary.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Icon(provider['icon'], color: brandPrimary, size: 26),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    provider['name'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    provider['category'],
+                                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                  ),
+                                  const Spacer(),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star, color: Colors.amber, size: 15),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          '${provider['rating']} (${provider['jobs']})',
+                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              const SizedBox(height: 28),
+
+              // Browse General Services Trade Categories
+              const Text(
+                'Browse Services',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary),
+              ),
+              const SizedBox(height: 12),
+
+              _filteredCategories.isEmpty 
+                ? const Text('No categories match your search.', style: TextStyle(color: Colors.grey)) 
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      final cat = _filteredCategories[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                            child: Icon(cat['icon'], color: brandPrimary),
+                          ),
+                          title: Text(
+                            cat['name'], 
+                            style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary)
+                          ),
+                          trailing: const Icon(Icons.chevron_right, color: brandSecondary),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FilteredServicesScreen(categoryName: cat['name']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+            ],
+          ),
+        );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: screenBackground,
       
-      // Top Bar Layout Header
       appBar: AppBar(
         title: const Text(
           'Ur Plug', 
@@ -86,280 +313,177 @@ class _SearchScreenState extends State<SearchScreen> {
         backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          Tooltip(
+            message: 'Logout from Ur Plug', 
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              icon: const Icon(Icons.logout, size: 20),
+              label: const Text(
+                'Logout', 
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const LoginScreen()), 
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+        ],
       ),
 
-      // Hamburger Drawer with Live Destination Redirect Functions
-      drawer: Drawer(
-        backgroundColor: screenBackground,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const UserAccountsDrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [brandPrimary, brandSecondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: brandPrimary, size: 42),
-              ),
-              accountName: Text(
-                'Acen Sharon', 
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)
-              ),
-              accountEmail: Text(
-                'acen.sharon@urplug.com', 
-                style: TextStyle(color: Colors.white70)
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home, color: brandPrimary),
-              title: const Text('Home', style: TextStyle(fontWeight: FontWeight.w600)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline, color: brandPrimary),
-              title: const Text('Account details', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Update profile information'),
-              onTap: () {
-                Navigator.pop(context); // Close Drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AccountDetailsScreenPlaceholder()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history, color: brandPrimary),
-              title: const Text('My Booking History', style: TextStyle(fontWeight: FontWeight.w600)),
-              onTap: () {
-                Navigator.pop(context); // Close Drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BookingHistoryScreenPlaceholder()),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Logout', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushAndRemoveUntil(context, 
-                MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
-              },
-            ),
-          ],
-        ),
-      ),
 
-      // Scrollable dashboard main view
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Live Interactive Search Input Bar
-            TextField(
-              controller: _searchController,
-              onChanged: (value) => _runSearchFilter(value),
-              decoration: InputDecoration(
-                hintText: 'Search services, providers...',
-                hintStyle: TextStyle(color: brandPrimary.withValues(alpha: 0.5)),
-                prefixIcon: const Icon(Icons.search, color: brandPrimary),
-                suffixIcon: _searchController.text.isNotEmpty 
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: brandPrimary),
-                      onPressed: () {
-                        _searchController.clear();
-                        _runSearchFilter('');
-                      },
-                    )
-                  : null,
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+      // Injects the dynamic screen content depending on current tab index
+      body: _buildBodyContent(),
 
-            const Text(
-              'High Rated Services & Businesses',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
-            ),
-            const SizedBox(height: 12),
-
-            // Horizontal dynamic items display array
-            _filteredProviders.isEmpty 
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
-                  child: Text('No providers match your search.', style: TextStyle(color: Colors.grey)),
-                )
-              : SizedBox(
-                  height: 175,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filteredProviders.length,
-                    itemBuilder: (context, index) {
-                      final provider = _filteredProviders[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProviderDetailScreen(providerName: provider['name']),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 155,
-                          margin: const EdgeInsets.only(right: 14, bottom: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              )
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 52,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: brandSecondary.withValues(alpha: 0.12),// FIXED: withValues
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Icon(provider['icon'], color: brandPrimary, size: 26),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              provider['name'],
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              provider['category'],
-                              style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            ),
-                            const Spacer(),
-                            Row(
-                              children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 15),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${provider['rating']} (${provider['jobs']})',
-                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Secondary Exploration Area: Browse Categories
-            const Text(
-              'Browse Services',
-              style: TextStyle(
-                fontSize: 18, 
-                fontWeight: FontWeight.bold, 
-                color: brandPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Vertical list styling to discover general trade providers
-            _filteredCategories.isEmpty ? const Text('No categories match your search.', style: TextStyle(color: Colors.grey)) :
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _filteredCategories.length,
-              itemBuilder: (context, index) {
-                final cat = _filteredCategories[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                      child: Icon(cat['icon'], color: brandPrimary),
-                    ),
-                    title: Text(
-                      cat['name'], 
-                      style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary)
-                    ),
-                    trailing: const Icon(Icons.chevron_right, color: brandSecondary),
-                    onTap: () {
-                      // FIXED: This now opens a dynamic filtered screen for your presentation!
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => FilteredServicesScreen(categoryName: cat['name']),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        ),  
+      // Core bottom navigation replacing the old hamburger drawer
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: brandPrimary,
+        unselectedItemColor: brandSecondary.withValues(alpha: 0.6),
+        showUnselectedLabels: true,
+        selectedFontSize: 13,
+        unselectedFontSize: 12,
+        elevation: 12,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            activeIcon: Icon(Icons.history_toggle_off),
+            label: 'History',
+          ),
+        ],
       ),
     );
   }
 }
 
-
-// Placeholder Destination for Booking Tracking Actions
-class BookingHistoryScreenPlaceholder extends StatelessWidget {
-  const BookingHistoryScreenPlaceholder({super.key});
+class BookingHistoryScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> bookings;
+  
+  const BookingHistoryScreen({super.key, required this.bookings});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE0F2F1),
-      appBar: AppBar(
-        title: const Text('My Bookings'),
-        backgroundColor: const Color(0xFF005F73),
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(child: Text('Booking history.')),
+    const Color brandPrimary = Color(0xFF005F73);
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: bookings.length,
+      itemBuilder: (context, index) {
+        final booking = bookings[index];
+        
+        // Safety Fallback Checks for state evaluation
+        final String status = booking['status']?.toString() ?? '';
+        final String rating = booking['rating']?.toString() ?? '';
+        final bool isCompleted = status == 'Completed';
+        final bool hasRating = rating.isNotEmpty && rating != '0' && rating != '0.0';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                child: Icon(booking['icon'], color: brandPrimary),
+              ),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      booking['provider'] ?? 'Unknown Provider',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  
+                  // FIXED: Simplified conditional block ensures ratings render if completed
+                  if (isCompleted && hasRating)
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: brandPrimary),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 6.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${booking['category'] ?? ''} • ${booking['date'] ?? ''}', 
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (booking['statusColor'] as Color).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: booking['statusColor'],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 
-// Dynamic category screen to show the lady how filtering works
-// Dynamic category screen to show the lady how filtering works
+
 class FilteredServicesScreen extends StatelessWidget {
   final String categoryName;
   const FilteredServicesScreen({super.key, required this.categoryName});
@@ -415,7 +539,6 @@ class FilteredServicesScreen extends StatelessWidget {
                       subtitle: Text('$categoryName • 4.8 Rating'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: brandPrimary),
                       onTap: () {
-                        // FIXED: This now routes directly to the ProviderDetailScreen with the correct name!
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -435,17 +558,16 @@ class FilteredServicesScreen extends StatelessWidget {
   }
 }
 
-class AccountDetailsScreenPlaceholder extends StatefulWidget {
-  const AccountDetailsScreenPlaceholder({super.key});
+class AccountDetailsScreen extends StatefulWidget {
+  const AccountDetailsScreen({super.key});
 
   @override
-  State<AccountDetailsScreenPlaceholder> createState() => _AccountDetailsScreenPlaceholderState();
+  State<AccountDetailsScreen> createState() => _AccountDetailsScreenState();
 }
 
-class _AccountDetailsScreenPlaceholderState extends State<AccountDetailsScreenPlaceholder> {
+class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   static const Color brandPrimary = Color(0xFF005F73);      
   static const Color brandSecondary = Color(0xFF0A9396);    
-  static const Color screenBackground = Color(0xFFE0F2F1);  
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController(text: 'Acen Sharon');
@@ -462,119 +584,114 @@ class _AccountDetailsScreenPlaceholderState extends State<AccountDetailsScreenPl
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: screenBackground,
-      appBar: AppBar(
-        title: const Text('Account Details', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: brandPrimary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 55,
-                    backgroundColor: brandPrimary.withValues(alpha: 0.15),
-                    child: const Icon(Icons.person, size: 65, color: brandPrimary),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            // Your exact profile photo stack configuration
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 55,
+                  backgroundColor: brandPrimary.withValues(alpha: 0.15),
+                  child: const Icon(Icons.person, size: 65, color: brandPrimary),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 4,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: brandSecondary,
+                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: brandSecondary,
-                      child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            
+            // Your beautiful white shadowed layout card container
+            Container(
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  )
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Personal Information',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary),
+                  ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: const Icon(Icons.person_outline, color: brandPrimary),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
+                    validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      prefixIcon: const Icon(Icons.phone_android, color: brandPrimary),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) => value!.isEmpty ? 'Phone number required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _locationController,
+                    decoration: InputDecoration(
+                      labelText: 'Your Location',
+                      prefixIcon: const Icon(Icons.location_on_outlined, color: brandPrimary),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) => value!.isEmpty ? 'Location area required' : null,
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(20.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
+            ),
+            const SizedBox(height: 32),
+            
+            // Your stylized wide save button action setup
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: brandPrimary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Personal Information',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary),
-                    ),
-                    const SizedBox(height: 18),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: const Icon(Icons.person_outline, color: brandPrimary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profile details updated successfully!'),
+                        backgroundColor: brandSecondary,
                       ),
-                      validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        prefixIcon: const Icon(Icons.phone_android, color: brandPrimary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Phone number required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _locationController,
-                      decoration: InputDecoration(
-                        labelText: 'Your Location',
-                        prefixIcon: const Icon(Icons.location_on_outlined, color: brandPrimary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Location area required' : null,
-                    ),
-                  ],
-                ),
+                    );
+                  }
+                },
+                child: const Text('Save Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandPrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile details updated successfully!'),
-                          backgroundColor: brandSecondary,
-                        ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Save Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
