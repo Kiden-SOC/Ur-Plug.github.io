@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'provider_detail_screen.dart';
 import 'package:ur_plug/views/auth/login_screen.dart';
+import 'chat_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -119,8 +120,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 1:
-        return const AccountDetailsScreen();
+        return const ActiveChatsDashboard();
       case 2:
+        return const AccountDetailsScreen();
+      case 3:
         return  BookingHistoryScreen(bookings: _bookingHistory);
       case 0:
       default:
@@ -363,6 +366,11 @@ class _SearchScreenState extends State<SearchScreen> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -611,7 +619,6 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
             ),
             const SizedBox(height: 32),
             
-            // Your beautiful white shadowed layout card container
             Container(
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
@@ -697,3 +704,101 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     );
   }
 }
+
+class ActiveChatsDashboard extends StatelessWidget {
+  const ActiveChatsDashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color brandPrimary = Color(0xFF005F73);
+    const Color brandSecondary = Color(0xFF0A9396);
+
+    // Realistic simulation data mimicking real client provider threads
+    final List<Map<String, dynamic>> mockThreads = [
+      {
+        'name': 'Sarah\'s Tech Sparks',
+        'message': 'Web connection sorted! Let me know if you need...',
+        'time': '10:42 AM',
+        'isUnread': true, // Displays notification status indicator bubble
+        'icon': Icons.bolt,
+      },
+      {
+        'name': 'Kla Clean Plugs',
+        'message': 'I am arriving at Kirinya Centre near the station now.',
+        'time': 'Yesterday',
+        'isUnread': false,
+        'icon': Icons.water_drop,
+      },
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: mockThreads.length,
+      itemBuilder: (context, index) {
+        final thread = mockThreads[index];
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: brandPrimary.withValues(alpha: 0.1),
+              child: Icon(thread['icon'], color: brandPrimary),
+            ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  thread['name'], 
+                  style: TextStyle(
+                    fontWeight: thread['isUnread'] ? FontWeight.bold : FontWeight.w600,
+                    color: brandPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  thread['time'], 
+                  style: TextStyle(
+                    fontSize: 11, 
+                    color: thread['isUnread'] ? brandSecondary : Colors.grey,
+                    fontWeight: thread['isUnread'] ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                thread['message'],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: thread['isUnread'] ? Colors.black87 : Colors.grey,
+                  fontWeight: thread['isUnread'] ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+            trailing: thread['isUnread'] 
+              ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary) // Unread Alert Dot!
+              : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    providerName: thread['name'] ?? 'Provider', // Fallback for safety
+                  ),
+                 ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
