@@ -7,14 +7,14 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/chat_message.dart';
 import '../models/chat_thread.dart';
 
-/// Central place to change once you wire in real config/env values.
+
 class ChatConfig {
   static const String httpBase = 'https://api.urplug.app';
   static const String wsBase = 'wss://api.urplug.app';
 }
 
-/// Handles a single chat room's live WebSocket connection.
-/// One instance per open ChatScreen; call dispose() when leaving the screen.
+
+
 class ChatRoomService {
   final String threadId;
   final String authToken;
@@ -68,8 +68,8 @@ class ChatRoomService {
         _typingController.add(data['is_typing'] == true);
         break;
       case 'read_receipt':
-        // Extend here: emit a dedicated stream if the UI needs to
-        // repaint individual bubble ticks on read receipts.
+        
+        
         break;
     }
   }
@@ -83,8 +83,8 @@ class ChatRoomService {
     _reconnectTimer = Timer(delay, connect);
   }
 
-  /// Sends a text message optimistically; caller should render it
-  /// immediately with MessageStatus.sending before this resolves.
+  
+  
   void sendMessage(ChatMessage message) {
     _channel?.sink.add(jsonEncode({
       'type': 'chat_message',
@@ -130,9 +130,8 @@ class ChatRoomService {
   }
 }
 
-/// Drives the inbox screen: initial REST load + live updates over a
-/// user-level WebSocket that broadcasts whenever any thread changes
-/// (new message, job confirmed, etc).
+
+
 class InboxService {
   final String authToken;
   WebSocketChannel? _channel;
