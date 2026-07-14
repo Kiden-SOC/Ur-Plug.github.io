@@ -64,7 +64,7 @@ class AuthService {
           password: password
       );
       return result.user;
-    } on FirebaseAuthException catch(e) {
+    } on FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     }
   }
@@ -76,22 +76,77 @@ class AuthService {
   Future<void> logout() async {
     await _auth.signOut();
   }
-}
-String _mapAuthError(FirebaseAuthException e) {
-  switch (e.code) {
-    case 'email-already-in-use':
-      return 'An account already exists with that email.';
-    case 'invalid-email':
-      return 'That email address looks invalid.';
-    case 'weak-password':
-      return 'Password should be at least 6 characters.';
-    case 'user-not-found':
-      return 'No account found with that email.';
-    case 'wrong-password':
-      return 'Incorrect password.';
-    case 'too-many-requests':
-      return 'Too many attempts. Try again later.';
-    default:
-      return 'Something went wrong. Please try again.';
+
+  // fetching a single user's profile
+  Future<UserModel?> getUserProfile(String uid) async {
+    DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+    if (!doc.exists) return null;
+    return UserModel.fromMap(uid, doc.data() as Map<String, dynamic>);
+  }
+
+  // update a user's own profile fields
+  Future<void> updateUserProfile({
+    required String uid,
+    String? fullName,
+    String? contact,
+    String? district,
+    String? town,
+  }) async {
+    Map<String, dynamic> updates = {};
+    if (fullName != null) updates['fullName'] = fullName;
+    if (contact != null) updates['contact'] = contact;
+    if (district != null) updates['district'] = district;
+    if (town != null) updates['town'] = town;
+
+    if (updates.isNotEmpty) {
+      await _firestore.collection('users').doc(uid).update(updates);
+    }
+  }
+
+  // fetch a single provider's profile
+  Future<Map<String, dynamic>?> getProviderProfile(String uid) async {
+    DocumentSnapshot doc = await _firestore.collection('providers').doc(uid).get();
+    if (!doc.exists) return null;
+    return doc.data() as Map<String, dynamic>;
+  }
+
+  // update a provider's business fields
+  Future<void> updateProviderProfile({
+    required String uid,
+    String? businessName,
+    String? businessCategory,
+    String? district,
+    String? town,
+    bool? available,
+  }) async {
+    Map<String, dynamic> updates = {};
+    if (businessName != null) updates['businessName'] = businessName;
+    if (businessCategory != null) updates['businessCategory'] = businessCategory;
+    if (district != null) updates['district'] = district;
+    if (town != null) updates['town'] = town;
+    if (available != null) updates['available'] = available;
+
+    if (updates.isNotEmpty) {
+      await _firestore.collection('providers').doc(uid).update(updates);
+    }
+  }
+
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'An account already exists with that email.';
+      case 'invalid-email':
+        return 'That email address looks invalid.';
+      case 'weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'user-not-found':
+        return 'No account found with that email.';
+      case 'wrong-password':
+        return 'Incorrect password.';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later.';
+      default:
+        return 'Something went wrong. Please try again.';
+    }
   }
 }
