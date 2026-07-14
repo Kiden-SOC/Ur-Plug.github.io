@@ -212,19 +212,20 @@ class ProviderDetailScreen extends StatelessWidget {
             // 6. PUBLIC RATINGS FEED LOG
             const Text('Verified Client Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary)),
             const SizedBox(height: 12),
-            ListView(
+                        ListView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 _buildReviewCard(
                   clientName: 'Atim Grace',
                   reviewText: 'Arrived perfectly on time and sorted my wiring fault immediately. Highly recommended!',
-                  starRating: '5.0',),
-                  
+                  starRating: '5.0',
+                ),
                 _buildReviewCard(
                   clientName: 'Nakyiwa Eleanor',
                   reviewText: 'Fair pricing structure, prompt responses in-app, and professional behavior.',
-                  starRating: '4.8',),
+                  starRating: '4.8',
+                ),
               ],
             ),
           ],
@@ -233,32 +234,66 @@ class ProviderDetailScreen extends StatelessWidget {
     );
   }
 
-Widget _buildMetricItem(IconData icon, String label, String value) {
-  return Column(
-    children: [Icon(icon, color: brandSecondary, size: 24),
-    const SizedBox(height: 4),
-    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
-    ],
-  );
+  Widget _buildMetricItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: brandSecondary, size: 24),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
+      ],
+    );
+  }
+
+  Widget _buildReviewCard({required String clientName, required String reviewText, required String starRating}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                  child: const Icon(Icons.person_outline, size: 16, color: brandPrimary),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 13)),
+                    const Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 11, color: brandSecondary),
+                        SizedBox(width: 4),
+                        Text('Hired Order Match', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 14),
+                    const SizedBox(width: 4),
+                    Text(starRating, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(reviewText, style: const TextStyle(color: Colors.black87, fontSize: 12.5, height: 1.4)),
+          ],
+        ),
+      ),
+    );
+  }
 }
-Widget 
-_buildReviewCard({required String clientName, required String reviewText, required String starRating}) {
-  return Container(margin: const EdgeInsets.only(bottom: 12),
-  decoration: BoxDecoration(color: Colors.white, 
-  borderRadius: BorderRadius.circular(16)),
-  child: Padding(padding: const EdgeInsets.all(14.0),
-  child: 
-  Column(crossAxisAlignment: CrossAxisAlignment.start,
-  children: [Row(children: [CircleAvatar(radius: 16,backgroundColor: brandPrimary.withValues(alpha: 0.1),child: const Icon(Icons.person_outline, size: 16, color: brandPrimary),),
-  const SizedBox(width: 10),
-  Column(crossAxisAlignment: CrossAxisAlignment.start,children: [Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 13)),
-  const Row(children: [Icon(Icons.check_circle, size: 11, color: brandSecondary),
-  SizedBox(width: 4),Text('Hired Order Match', style: TextStyle(fontSize: 10, color: Colors.grey)),],),],),
-  const Spacer(),Row(
-    children: [const Icon(Icons.star, color: Colors.amber, size: 14),const SizedBox(width: 4),Text(starRating, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),],),],),const SizedBox(height: 8),Text(reviewText, style: const TextStyle(color: Colors.black87, fontSize: 12.5, height: 1.4)),
-  ],
-  ),
-  ),
-  );
-  }
-  }
+
