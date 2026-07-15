@@ -3,7 +3,7 @@ import 'signup_screen.dart'; // Use your exact project folder structure here
 import 'package:ur_plug/views/customer_dashboard/search_screen.dart';
 import 'package:ur_plug/views/admin_dashboard/admin_screen.dart'; // Use your exact project folder structure heree
 import 'package:ur_plug/views/business_dashboard/business_screen.dart'; // Use your exact project folder structure here
-
+import '../../services/auth_service.dart';
 
 // =========================================================================
 // 1. MAIN LOGIN SCREEN VIEW
@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _loginFormKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _obscureLoginPassword = true;
 
   
@@ -36,41 +37,78 @@ class _LoginScreenState extends State<LoginScreen> {
   // =========================================================================
   // ROLE-BASED LOGIN REDIRECTION LOGIC
   // =========================================================================
-  void _handleLogin() {
-    if (_loginFormKey.currentState!.validate()) {
-      final email = _emailController.text.trim().toLowerCase();
+  Future<void> _handleLogin() async {
+    if (!_loginFormKey.currentState!.validate()) return;
 
+    try {
+      // Authenticate the user
+      final user = await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-      // This is perfect for testing your screens right now!
-      String userRole = 'customer'; // Default fallback
+      if (user == null) return;
 
-      if (email == 'admin@urplug.com') {
-        userRole = 'admin';
-      } else if (email.contains('business')) {
-        userRole = 'business';
-      } else {
-        userRole = 'customer';
+      //admin account
+      if (user.email == 'admin@urplug.com') {
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AdminScreen(),
+          ),
+        );
+        return;
+      }
+      //other users
+
+      // Fetch the user's profile from Firestore
+      final profile = await _authService.getUserProfile(user.uid);
+
+      if (profile == null) {
+        throw Exception("User profile not found.");
       }
 
-      // Route the user cleanly based on their detected backend role
       if (!mounted) return;
-      
-      if (userRole == 'admin') {
+
+      // Redirect based on role
+      if (profile.role == 'producer') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AdminScreen()),
+          MaterialPageRoute(
+            builder: (_) => const BusinessScreen(),
+          ),
         );
-      } else if (userRole == 'customer') {
+      } else if (profile.role == 'consumer') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const SearchScreen()),
+          MaterialPageRoute(
+            builder: (_) => const SearchScreen(),
+          ),
         );
-      } else if (userRole == 'business') {
+      } else if (profile.role == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const BusinessScreen()), // FIXED: Connects seamlessly to the business screen now
+          MaterialPageRoute(
+            builder: (_) => const AdminScreen(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Unknown user role."),
+          ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
     }
   }
 
@@ -113,6 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
+
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
