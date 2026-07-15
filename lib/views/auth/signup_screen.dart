@@ -348,6 +348,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ],
               const SizedBox(height: 16),
                 TextFormField(
+                controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration( // Look here: Removed "const"
                   labelText: 'Enter Password',
@@ -366,6 +367,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 16),
                 TextFormField(
+                controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
                 decoration: InputDecoration( // Look here: Removed "const"
                   labelText: 'Confirm Password',
