@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart'; // IMPORTED THE PROVIDER PACKAGE
 import 'firebase_options.dart';
+
+// Imports your global app state controllers
+import 'state/provider_profile_controller.dart';
+import 'state/customer_profile_controller.dart';
 import 'views/auth/login_screen.dart'; 
 
 void main() async {
@@ -8,7 +13,17 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const UrPlugApp());
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        // Both profile controllers are now active globally across the entire app
+        ChangeNotifierProvider(create: (_) => ProviderProfileController()),
+        ChangeNotifierProvider(create: (_) => CustomerProfileController()),
+      ],
+      child: const UrPlugApp(),
+    ),
+  );
 }
 
 class UrPlugApp extends StatelessWidget {
@@ -32,7 +47,3 @@ class UrPlugApp extends StatelessWidget {
     );
   }
 }
-
-
-
-
