@@ -1,3 +1,7 @@
+import 'dart:io' as io;
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../../state/customer_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'provider_detail_screen.dart';
 import 'package:ur_plug/views/auth/login_screen.dart';
@@ -578,9 +582,22 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   static const Color brandSecondary = Color(0xFF0A9396);    
 
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'Acen Sharon');
-  final _phoneController = TextEditingController(text: '+256 701 234567');
-  final _locationController = TextEditingController(text: 'Kirinya, Bweyogerere');
+  final ImagePicker _picker = ImagePicker();
+  bool _updatingPhoto = false;
+
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _locationController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-populate text controllers with live values from your new controller state
+    final profile = context.read<CustomerProfileController>().profile;
+    _nameController = TextEditingController(text: profile.name);
+    _phoneController = TextEditingController(text: profile.phone);
+    _locationController = TextEditingController(text: profile.location);
+  }
 
   @override
   void dispose() {
@@ -590,32 +607,94 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     super.dispose();
   }
 
+  Future<ImageSource?> _askImageSource() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined, color: brandPrimary),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: brandPrimary),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changeProfilePhoto() async {
+    final controller = context.read<CustomerProfileController>();
+    final source = await _askImageSource();
+    if (source == null) return;
+
+    final file = await _picker.pickImage(source: source, imageQuality: 82);
+    if (file == null) return;
+
+    if (!mounted) return;
+    setState(() => _updatingPhoto = true);
+
+    final ok = await controller.setProfilePhoto(file.path);
+    
+    if (!mounted) return;
+    setState(() => _updatingPhoto = false);
+
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update your profile photo.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Watches the customer profile state to automatically re-render when a photo changes
+    final profile = context.watch<CustomerProfileController>().profile;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            // Your exact profile photo stack configuration
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 55,
-                  backgroundColor: brandPrimary.withValues(alpha: 0.15),
-                  child: const Icon(Icons.person, size: 65, color: brandPrimary),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 4,
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: brandSecondary,
-                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+            // Clickable avatar stack configured to load the path dynamically
+            GestureDetector(
+              onTap: _updatingPhoto ? null : _changeProfilePhoto,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: brandPrimary.withValues(alpha: 0.15),
+                    backgroundImage: profile.profilePhotoPath.isNotEmpty
+                        ? FileImage(io.File(profile.profilePhotoPath)) as ImageProvider
+                        : null,
+                    child: _updatingPhoto
+                        ? const CircularProgressIndicator(color: brandPrimary, strokeWidth: 3)
+                        : profile.profilePhotoPath.isEmpty
+                            ? const Icon(Icons.person, size: 65, color: brandPrimary)
+                            : null,
                   ),
-                ),
-              ],
+                  if (!_updatingPhoto)
+                    Positioned(
+                      bottom: 0,
+                      right: 4,
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: brandSecondary,
+                        child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 32),
             
@@ -675,7 +754,6 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
             ),
             const SizedBox(height: 32),
             
-            // Your stylized wide save button action setup
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -687,6 +765,13 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
                 ),
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
+                    // Saves inputs to state repository
+                    context.read<CustomerProfileController>().updateProfileDetails(
+                          name: _nameController.text.trim(),
+                          phone: _phoneController.text.trim(),
+                          location: _locationController.text.trim(),
+                        );
+                        
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Profile details updated successfully!'),
@@ -704,6 +789,7 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     );
   }
 }
+
 
 class ActiveChatsDashboard extends StatelessWidget {
   const ActiveChatsDashboard({super.key});
@@ -801,4 +887,5 @@ class ActiveChatsDashboard extends StatelessWidget {
     );
   }
 }
+
 
