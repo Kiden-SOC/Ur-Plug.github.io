@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
+import '../auth/login_screen.dart';
 
 enum UserRole { customer, business }
 
@@ -425,11 +426,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Account created successfully!')),
+                          const SnackBar(
+                              content: Text('Account created successfully! Please log in.'),
+                          ),
+                        );
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
                         );
 
 
-                        } catch (e) {
+
+                      } catch (e) {
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(e.toString())),
