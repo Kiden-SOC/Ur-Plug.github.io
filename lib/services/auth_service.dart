@@ -133,6 +133,28 @@ class AuthService {
     }
   }
 
+  //greet user by their name
+  Future<UserModel?> getCurrentUser() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return null;
+    }
+
+    final doc = await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .get();
+
+    if (doc.exists) {
+      return UserModel.fromMap(
+        doc.id,
+        doc.data()!,
+      );
+    }
+    return null;
+  }
+
   String _mapAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
