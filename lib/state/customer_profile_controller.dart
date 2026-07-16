@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/customer_profile.dart';
 
+
 class CustomerProfileController extends ChangeNotifier {
   // Configured with your requested dummy baseline data
   CustomerProfile _profile = CustomerProfile(

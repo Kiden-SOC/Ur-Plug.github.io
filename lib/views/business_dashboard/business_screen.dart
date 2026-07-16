@@ -22,6 +22,7 @@ class BusinessScreen extends StatefulWidget {
 }
 
 class _BusinessScreenState extends State<BusinessScreen> {
+  String username = '';
   int _tabIndex = 0;
 
   @override
