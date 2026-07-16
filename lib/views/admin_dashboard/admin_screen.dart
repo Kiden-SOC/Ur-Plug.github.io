@@ -196,11 +196,39 @@ class _AdminScreenState extends State<AdminScreen> {
                 bottomRight: Radius.circular(28),
               ),
             ),
-            child: Row(
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildMetricBlock('Total Users', '$totalCount', Icons.people_outline, Colors.white24),
-                _buildMetricBlock('Pending Vetting', '$pendingCount', Icons.gavel, Colors.orangeAccent.withValues(alpha: 0.2)),
-                _buildMetricBlock('Flagged Active', '$flaggedCount', Icons.report_problem_outlined, Colors.redAccent.withValues(alpha: 0.2)),
+                const Text(
+                    "Welcome, Admin 👋",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  "Manage users, providers, and platform activity.",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    _buildMetricBlock('Total Users', '$totalCount', Icons.people_outline, Colors.white24),
+                    _buildMetricBlock('Pending Vetting', '$pendingCount', Icons.gavel, Colors.orangeAccent.withValues(alpha: 0.2)),
+                    _buildMetricBlock('Flagged Active', '$flaggedCount', Icons.report_problem_outlined, Colors.redAccent.withValues(alpha: 0.2),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

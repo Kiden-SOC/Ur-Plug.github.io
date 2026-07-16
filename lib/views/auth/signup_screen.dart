@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
-import '../auth/login_screen.dart';
+import '../business_dashboard/business_screen.dart';
+import '../customer_dashboard/search_screen.dart';
 
 enum UserRole { customer, business }
 
@@ -430,12 +431,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               content: Text('Account created successfully! Please log in.'),
                           ),
                         );
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                          ),
-                          (route) => false,
-                        );
+                        if (role=='consumer') {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (context) => const SearchScreen(),
+                            ),
+                                (route) => false,
+                          );
+                        } else {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const BusinessScreen(),
+                            ),
+                            (route) => false,
+                          );
+                        }
 
 
 

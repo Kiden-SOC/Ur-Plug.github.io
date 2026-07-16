@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:ur_plug/services/auth_service.dart';
 import '../../state/customer_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'provider_detail_screen.dart';
@@ -15,6 +16,27 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  //greeting
+  String username = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredProviders = _allProviders;
+    _filteredCategories = _allCategories;
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    final user =  await AuthService().getCurrentUser();
+
+    if (user != null) {
+      setState(() {
+        username = user.fullName;
+      });
+    }
+  }
+
   // Brand Color Palette Configured Precisely
   static const Color brandPrimary = Color(0xFF005F73);      // Deep Ocean Teal
   static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise       
@@ -83,12 +105,6 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> _filteredProviders = [];
   List<Map<String, dynamic>> _filteredCategories = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _filteredProviders = _allProviders;
-    _filteredCategories = _allCategories;
-  }
 
   // Active search filtering routine
   void _runSearchFilter(String enteredKeyword) {
@@ -136,6 +152,25 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                "Welcome, $username 👋",
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                "Find trusted services near you.",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+
+              const SizedBox(height: 20),
               // Live Interactive Search Input Bar
               TextField(
                 controller: _searchController,
@@ -344,6 +379,8 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
+
+
 
 
       // Injects the dynamic screen content depending on current tab index
