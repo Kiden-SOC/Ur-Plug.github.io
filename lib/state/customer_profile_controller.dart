@@ -1,25 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:ur_plug/services/auth_service.dart';
 import '../models/customer_profile.dart';
 
-
 class CustomerProfileController extends ChangeNotifier {
-  // Configured with your requested dummy baseline data
+  // Completely empty baseline model configuration
   CustomerProfile _profile = CustomerProfile(
-    id: 'cust_789',
-    name: 'Acen Sharon',
-    phone: '+256 701 234567',
-    location: 'Kirinya, Bweyogerere',
+    id: '',
+    name: '',
+    phone: '',
+    location: '',
     profilePhotoPath: '',
   );
 
   CustomerProfile get profile => _profile;
+
+  /// Fetches the logged-in user profile from active session dynamically
+  Future<void> fetchAndSyncActiveUser() async {
+    final user = await AuthService().getCurrentUser();
+    if (user != null) {
+      _profile = CustomerProfile(
+        id: user.uid, 
+        name: user.fullName, 
+        // 🚀 DYNAMIC PRE-FILL: Preserve signup cache if present, else fallback safely
+        phone: _profile.phone.isEmpty ? '' : _profile.phone, 
+        location: _profile.location.isEmpty ? '' : _profile.location,
+        profilePhotoPath: _profile.profilePhotoPath,
+      );
+      notifyListeners();
+    }
+  }
 
   /// Simulates saving the new image path to your database/state layer
   Future<bool> setProfilePhoto(String localPath) async {
     try {
       await Future.delayed(const Duration(milliseconds: 500));
       _profile = _profile.copyWith(profilePhotoPath: localPath);
-      notifyListeners(); // Hot-updates your UI immediately
+      notifyListeners(); 
       return true;
     } catch (_) {
       return false;

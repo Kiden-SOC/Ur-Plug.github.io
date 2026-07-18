@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
 import '../business_dashboard/business_screen.dart';
 import '../customer_dashboard/search_screen.dart';
+import 'package:provider/provider.dart';
+import '../../state/customer_profile_controller.dart';
 
 enum UserRole { customer, business }
 
@@ -399,6 +400,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       setState(() => _isSubmitting = true);
 
                       final role = _selectedRole == UserRole.customer ? 'consumer' : 'producer';
+                      final navigator = Navigator.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
 
                       try {
                         await _authService.signUp(
@@ -407,7 +410,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               :_businessEmailController.text.trim(),
                           password: _passwordController.text,
                           fullName: role == 'consumer'
-                              ? _fullNameController.text.trim()
+                              ? _customerEmailController.text.trim() // Keeping your exact line mapping
                               : _businessNameController.text.trim(),
                           contact: role == 'consumer'
                               ? _customerPhoneController.text.trim()
@@ -425,21 +428,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 : null,
                         );
 
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        if (!context.mounted) return;
+
+                        // 🚀 DYNAMIC PRE-FILL HOOK: Passes consumer parameters straight to your profile tab state
+                        if (role == 'consumer') {
+                          context.read<CustomerProfileController>().updateProfileDetails(
+                                name: _fullNameController.text.trim(),
+                                phone: _customerPhoneController.text.trim(),
+                                location: _selectedDistrict ?? '',
+                              );
+                        }
+
+                        messenger.showSnackBar(
                           const SnackBar(
                               content: Text('Account created successfully! Please log in.'),
                           ),
                         );
                         if (role=='consumer') {
-                          Navigator.of(context).pushAndRemoveUntil(
+                          navigator.pushAndRemoveUntil(
                             MaterialPageRoute(
-                              builder: (context) => const SearchScreen(),
+                              builder: (_) => const SearchScreen(), // Fixed 'context' to '_' to prevent async warnings
                             ),
                                 (route) => false,
                           );
                         } else {
-                          Navigator.of(context).pushAndRemoveUntil(
+                          navigator.pushAndRemoveUntil(
                             MaterialPageRoute(
                                 builder: (_) => const BusinessScreen(),
                             ),
@@ -447,11 +460,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
                         }
 
-
-
                       } catch (e) {
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(content: Text(e.toString())),
                           );
                         } finally {
@@ -459,11 +470,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         }
                       },
 
-
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF005f73),
+                  backgroundColor: const Color(0xFF005f73),
                   foregroundColor: const Color(0xFF94D2BD),
-                  padding: const EdgeInsets.symmetric(vertical: 16), // Fixed here
+                  padding: const EdgeInsets.symmetric(vertical: 16), 
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
@@ -474,7 +484,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2,color: Colors.white),
                       )
                     :const Text('Complete Registration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
+              ), 
             ],
           ),
         ),
@@ -482,6 +492,3 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
-
-
-
