@@ -17,44 +17,8 @@ class _AdminScreenState extends State<AdminScreen> {
   // State flag to handle live category filtering on the dashboard
   String _currentFilter = 'All'; 
 
-  final List<Map<String, dynamic>> _appUsers = [
-    {
-      'name': 'Sarah\'s Tech Sparks',
-      'role': 'Business',
-      'category': 'Electrician',
-      'status': 'Verified',
-      'rating': '4.9',
-      'reports': 0,
-      'location': 'Kirinya',
-    },
-    {
-      'name': 'Express Repairs',
-      'role': 'Business',
-      'category': 'Mechanic',
-      'status': 'Pending Approval',
-      'rating': 'N/A',
-      'reports': 0,
-      'location': 'Bweyogerere',
-    },
-    {
-      'name': 'Kiden',
-      'role': 'Customer',
-      'category': 'N/A',
-      'status': 'Verified',
-      'rating': 'N/A',
-      'reports': 0,
-      'location': 'Kireka',
-    },
-    {
-      'name': 'Unreliable Handyman Co.',
-      'role': 'Business',
-      'category': 'Plumber',
-      'status': 'Suspended',
-      'rating': '2.3',
-      'reports': 4,
-      'location': 'Ntinda',
-    },
-  ];
+  // DYNAMIC FRONTEND STATE: Extracted all static entries completely
+  final List<Map<String, dynamic>> _appUsers = [];
 
   void _approveUser(int index) {
     setState(() {
@@ -139,20 +103,19 @@ class _AdminScreenState extends State<AdminScreen> {
       ),
     );
   }
-
-  @override
+    @override
   Widget build(BuildContext context) {
-    // Dynamic counters
+    // Dynamic counters calculated on empty slots or future providers
     int totalCount = _appUsers.length;
     int pendingCount = _appUsers.where((u) => u['status'] == 'Pending Approval').length;
-    int flaggedCount = _appUsers.where((u) => (u['reports'] as int) > 0).length;
+    int flaggedCount = _appUsers.where((u) => (u['reports'] as int? ?? 0) > 0).length;
 
     // Filter logic routine
     List<Map<String, dynamic>> displayedUsers = _appUsers;
     if (_currentFilter == 'Pending') {
       displayedUsers = _appUsers.where((u) => u['status'] == 'Pending Approval').toList();
     } else if (_currentFilter == 'Flagged') {
-      displayedUsers = _appUsers.where((u) => (u['reports'] as int) > 0).toList();
+      displayedUsers = _appUsers.where((u) => (u['reports'] as int? ?? 0) > 0).toList();
     }
 
     return Scaffold(
@@ -175,7 +138,7 @@ class _AdminScreenState extends State<AdminScreen> {
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
                 (route) => false,
               );
             },
@@ -196,21 +159,18 @@ class _AdminScreenState extends State<AdminScreen> {
                 bottomRight: Radius.circular(28),
               ),
             ),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                    "Welcome, Admin 👋",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  "Welcome, Admin 👋",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-
                 const SizedBox(height: 6),
-
                 const Text(
                   "Manage users, providers, and platform activity.",
                   style: TextStyle(
@@ -218,15 +178,12 @@ class _AdminScreenState extends State<AdminScreen> {
                     fontSize: 14,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Row(
                   children: [
                     _buildMetricBlock('Total Users', '$totalCount', Icons.people_outline, Colors.white24),
                     _buildMetricBlock('Pending Vetting', '$pendingCount', Icons.gavel, Colors.orangeAccent.withValues(alpha: 0.2)),
-                    _buildMetricBlock('Flagged Active', '$flaggedCount', Icons.report_problem_outlined, Colors.redAccent.withValues(alpha: 0.2),
-                    ),
+                    _buildMetricBlock('Flagged Active', '$flaggedCount', Icons.report_problem_outlined, Colors.redAccent.withValues(alpha: 0.2)),
                   ],
                 ),
               ],
@@ -258,7 +215,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       final user = displayedUsers[index];
                       final int rawIndex = _appUsers.indexOf(user); 
                       final bool isBusiness = user['role'] == 'Business';
-                      final String status = user['status'];
+                      final String status = user['status'] ?? '';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -278,95 +235,94 @@ class _AdminScreenState extends State<AdminScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: isBusiness ? brandSecondary.withValues(alpha: 0.1) : brandPrimary.withValues(alpha: 0.1),
+                                    backgroundColor: isBusiness ? brandSecondary.withValues(alpha: 0.1) : brandPrimary.withValues(alpha: 0.15),
                                     child: Icon(isBusiness ? Icons.engineering_outlined : Icons.person_outline, size: 20, color: isBusiness ? brandSecondary : brandPrimary),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user['name'], 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: brandPrimary)
-                                      ),
-                                      Text(
-                                        '${user['role']} • ${user['location']}', 
-                                        style: const TextStyle(color: Colors.grey, fontSize: 12)
-                                      ),
-                                    ],
-                                  ),
-                                  ),
-                                  _buildStatusBadge(status),
-                                  ],
-                                  ),
-                                  const Divider(height: 24, thickness: 0.5),
-                                  Row(
-                                    children: [
-                                      if (isBusiness) ...[
-                                        Icon(Icons.work_outline, size: 14, color: Colors.grey.shade600),
-                                        const SizedBox(width: 4),
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
                                         Text(
-                                          user['category'], 
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500)
+                                          user['name'] ?? '', 
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: brandPrimary)
                                         ),
-                                        const SizedBox(width: 16),
-                                        const Icon(Icons.star_outline, size: 14, color: Colors.amber),
-                                        const SizedBox(width: 4),
                                         Text(
-                                          user['rating'], 
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600)
-                                        ),
-                                      ] else ...[
-                                        Icon(Icons.verified_user_outlined, size: 14, color: Colors.grey.shade600),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Verified Consumer Access', 
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700)
+                                          '${user['role'] ?? ''} • ${user['location'] ?? ''}', 
+                                          style: const TextStyle(color: Colors.grey, fontSize: 12)
                                         ),
                                       ],
-                                      const Spacer(),
-                                      if (status == 'Pending Approval')
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: brandSecondary,
-                                            foregroundColor: Colors.white,
-                                            elevation: 0,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          ),
-                                          onPressed: () => _approveUser(rawIndex),
-                                          child: const Text('Approve Live', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                        )
-                                      else if (user['role'] == 'Business')
-                                        OutlinedButton(
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: status == 'Suspended' ? Colors.green : Colors.redAccent,
-                                            side: BorderSide(color: status == 'Suspended' ? Colors.green : Colors.redAccent.withValues(alpha: 0.4)),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          ),
-                                          onPressed: () => _toggleSuspendUser(rawIndex),
-                                          child: Text(
-                                            status == 'Suspended' ? 'Lift Ban' : 'Suspend', 
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)
-                                          ),
-                                        ),
-                                    ],
+                                    ),
                                   ),
+                                  _buildStatusBadge(status),
+                                ],
+                              ),
+                              const Divider(height: 24, thickness: 0.5),
+                              Row(
+                                children: [
+                                  if (isBusiness) ...[
+                                    Icon(Icons.work_outline, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      user['category'] ?? '', 
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500)
+                                    ),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.star_outline, size: 14, color: Colors.amber),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      user['rating'] ?? '', 
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600)
+                                    ),
+                                  ] else ...[
+                                    Icon(Icons.verified_user_outlined, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Verified Consumer Access', 
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700)
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  if (status == 'Pending Approval')
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: brandSecondary,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      ),
+                                      onPressed: () => _approveUser(rawIndex),
+                                      child: const Text('Approve Live', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    )
+                                  else if (user['role'] == 'Business')
+                                    OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: status == 'Suspended' ? Colors.green : Colors.redAccent,
+                                        side: BorderSide(color: status == 'Suspended' ? Colors.green : Colors.redAccent, width: 1),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      ),
+                                      onPressed: () => _toggleSuspendUser(rawIndex),
+                                      child: Text(
+                                        status == 'Suspended' ? 'Lift Ban' : 'Suspend',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       );
                     },
-                  ),
+                ),
           ),
         ],
       ),
     );
   }
-}
-
+} 
 
                                    
 
