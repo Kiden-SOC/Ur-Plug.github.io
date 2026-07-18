@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'provider_detail_screen.dart';
 import 'package:ur_plug/views/auth/login_screen.dart';
 import 'chat_screen.dart';
+import 'package:ur_plug/views/customer_dashboard/request_service_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,7 +17,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  //greeting
+  // greeting
   String username = "";
 
   @override
@@ -28,7 +29,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> loadUser() async {
-    final user =  await AuthService().getCurrentUser();
+    final user = await AuthService().getCurrentUser();
 
     if (user != null) {
       setState(() {
@@ -46,67 +47,17 @@ class _SearchScreenState extends State<SearchScreen> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, dynamic>> _allProviders = [
-    {'name': 'Sarah\'s Tech Sparks', 'category': 'Electrician', 'rating': '4.9', 'jobs': '42 jobs', 'icon': Icons.bolt},
-    {'name': 'Kla Clean Plugs', 'category': 'Plumber', 'rating': '4.8', 'jobs': '56 jobs', 'icon': Icons.water_drop},
-    {'name': 'Express Repairs', 'category': 'Mechanic', 'rating': '4.7', 'jobs': '31 jobs', 'icon': Icons.car_repair}, 
-    {'name': 'Kimuli Decorators', 'category': 'Event Decor', 'rating': '5.0', 'jobs': '19 jobs', 'icon': Icons.celebration},
-  ];
-
-  final List<Map<String, dynamic>> _allCategories = [
-    {'name': 'Plumbers', 'icon': Icons.plumbing},
-    {'name': 'Electricians', 'icon': Icons.electric_bolt},
-    {'name': 'Carpenters', 'icon': Icons.chair},
-    {'name': 'Catering & Decor', 'icon': Icons.local_pizza},
-  ];
-
-     // Realistic mock tracking data for booking history
-  final List<Map<String, dynamic>> _bookingHistory = [
-    {
-      'provider': 'Sarah\'s Tech Sparks',
-      'category': 'Electrician',
-      'date': '12 July, 2026',
-      'rating': '4.9',
-      'status': 'Completed',
-      'icon': Icons.bolt,
-      'statusColor': Colors.green,
-    },
-    {
-      'provider': 'Kla Clean Plugs',
-      'category': 'Plumber',
-      'date': 'In Progress',
-      'rating': '',
-      'status': 'Active',
-      'icon': Icons.water_drop,
-      'statusColor': Colors.orange,
-    },
-    {
-      'provider': 'Kimuli Decorators',
-      'category': 'Event Decor',
-      'date': '04 June, 2026',
-      'rating': '5.0',
-      'status': 'Completed',
-      'icon': Icons.celebration,
-      'statusColor': Colors.green,
-    },
-    {
-      'provider': 'Express Repairs',
-      'category': 'Mechanic',
-      'date': '20 May, 2026',
-      'rating': '',
-      'status': 'Cancelled',
-      'icon': Icons.car_repair,
-      'statusColor': Colors.red,
-    },
-  ];
-
+  // FRONTEND HOOKS: Clean local placeholders ready for backend data binding
+  final List<Map<String, dynamic>> _allProviders = [];
+  final List<Map<String, dynamic>> _allCategories = [];
+  final List<Map<String, dynamic>> _bookingHistory = [];
+  final List<Map<String, dynamic>> _chatThreads = [];
 
   // Dynamic filter lists initialized on startup
   List<Map<String, dynamic>> _filteredProviders = [];
   List<Map<String, dynamic>> _filteredCategories = [];
 
-
-  // Active search filtering routine
+  // Active search filtering routine running locally
   void _runSearchFilter(String enteredKeyword) {
     List<Map<String, dynamic>> providerResults = [];
     List<Map<String, dynamic>> categoryResults = [];
@@ -115,12 +66,16 @@ class _SearchScreenState extends State<SearchScreen> {
       providerResults = _allProviders;
       categoryResults = _allCategories;
     } else {
+      final query = enteredKeyword.toLowerCase();
       providerResults = _allProviders.where((item) =>
-          item['name'].toLowerCase().contains(enteredKeyword.toLowerCase()) ||
-          item['category'].toLowerCase().contains(enteredKeyword.toLowerCase())).toList();
+          item['name'].toString().toLowerCase().contains(query) ||
+          item['category'].toString().toLowerCase().contains(query) ||
+          (item['location'] ?? '').toString().toLowerCase().contains(query) ||
+          (item['town'] ?? '').toString().toLowerCase().contains(query)
+      ).toList();
 
       categoryResults = _allCategories.where((item) =>
-          item['name'].toLowerCase().contains(enteredKeyword.toLowerCase())).toList();
+          item['name'].toString().toLowerCase().contains(query)).toList();
     }
 
     setState(() {
@@ -135,16 +90,15 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // Helper builder method to manage dynamic screen views
-
+   // Helper builder method to manage dynamic screen views
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 1:
-        return const ActiveChatsDashboard();
+        return ActiveChatsDashboard(chatThreads: _chatThreads);
       case 2:
         return const AccountDetailsScreen();
       case 3:
-        return  BookingHistoryScreen(bookings: _bookingHistory);
+        return BookingHistoryScreen(bookings: _bookingHistory);
       case 0:
       default:
         return SingleChildScrollView(
@@ -159,17 +113,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              Text(
+              const Text(
                 "Find trusted services near you.",
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 14,
                 ),
               ),
-
               const SizedBox(height: 20),
               // Live Interactive Search Input Bar
               TextField(
@@ -197,6 +148,36 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ),
+              
+              const SizedBox(height: 16),
+
+              // Supervisor Requirement Entry Route
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: brandPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.add_location_alt_outlined),
+                  label: const Text(
+                    'Request Service Anywhere Else',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RequestServiceScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
               const SizedBox(height: 24),
 
               const Text(
@@ -204,6 +185,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
               ),
               const SizedBox(height: 12),
+
+              // The dynamic list remains completely unchanged...
+
 
               _filteredProviders.isEmpty 
                 ? const Padding(
@@ -222,7 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ProviderDetailScreen(providerName: provider['name']),
+                                builder: (_) => ProviderDetailScreen(providerName: provider['name'] ?? ''),
                               ),
                             );
                           },
@@ -253,18 +237,22 @@ class _SearchScreenState extends State<SearchScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Center(
-                                      child: Icon(provider['icon'], color: brandPrimary, size: 26),
+                                      child: Icon(
+                                        provider['icon'] is IconData ? provider['icon'] : Icons.person, 
+                                        color: brandPrimary, 
+                                        size: 26,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    provider['name'],
+                                    provider['name'] ?? '',
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    provider['category'],
+                                    provider['category'] ?? '',
                                     style: const TextStyle(color: Colors.grey, fontSize: 11),
                                   ),
                                   const Spacer(),
@@ -274,7 +262,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          '${provider['rating']} (${provider['jobs']})',
+                                          '${provider['rating'] ?? '0.0'} (${provider['jobs'] ?? '0 jobs'})',
                                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -292,7 +280,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
               const SizedBox(height: 28),
 
-              // Browse General Services Trade Categories
               const Text(
                 'Browse Services',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary),
@@ -316,10 +303,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                            child: Icon(cat['icon'], color: brandPrimary),
+                            child: Icon(cat['icon'] is IconData ? cat['icon'] : Icons.category, color: brandPrimary),
                           ),
                           title: Text(
-                            cat['name'], 
+                            cat['name'] ?? '', 
                             style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary)
                           ),
                           trailing: const Icon(Icons.chevron_right, color: brandSecondary),
@@ -327,7 +314,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => FilteredServicesScreen(categoryName: cat['name']),
+                                builder: (_) => FilteredServicesScreen(categoryName: cat['name'] ?? ''),
                               ),
                             );
                           },
@@ -341,12 +328,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: screenBackground,
-      
       appBar: AppBar(
         title: const Text(
           'Ur Plug', 
@@ -371,7 +356,7 @@ class _SearchScreenState extends State<SearchScreen> {
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
                   context, 
-                  MaterialPageRoute(builder: (context) => const LoginScreen()), 
+                  MaterialPageRoute(builder: (_) => const LoginScreen()), 
                   (route) => false,
                 );
               },
@@ -379,14 +364,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
-
-
-
-
-      // Injects the dynamic screen content depending on current tab index
       body: _buildBodyContent(),
-
-      // Core bottom navigation replacing the old hamburger drawer
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -429,123 +407,14 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
-class BookingHistoryScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> bookings;
-  
-  const BookingHistoryScreen({super.key, required this.bookings});
-
-  @override
-  Widget build(BuildContext context) {
-    const Color brandPrimary = Color(0xFF005F73);
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: bookings.length,
-      itemBuilder: (context, index) {
-        final booking = bookings[index];
-        
-        // Safety Fallback Checks for state evaluation
-        final String status = booking['status']?.toString() ?? '';
-        final String rating = booking['rating']?.toString() ?? '';
-        final bool isCompleted = status == 'Completed';
-        final bool hasRating = rating.isNotEmpty && rating != '0' && rating != '0.0';
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              )
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                child: Icon(booking['icon'], color: brandPrimary),
-              ),
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      booking['provider'] ?? 'Unknown Provider',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  
-                  // FIXED: Simplified conditional block ensures ratings render if completed
-                  if (isCompleted && hasRating)
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          rating,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: brandPrimary),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${booking['category'] ?? ''} • ${booking['date'] ?? ''}', 
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (booking['statusColor'] as Color).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        status,
-                        style: TextStyle(
-                          color: booking['statusColor'],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-
-
 class FilteredServicesScreen extends StatelessWidget {
   final String categoryName;
   const FilteredServicesScreen({super.key, required this.categoryName});
 
   @override
   Widget build(BuildContext context) {
-    // Shared theme colors
     const Color brandPrimary = Color(0xFF005F73);
     const Color screenBackground = Color(0xFFE0F2F1);
-
-    // Dynamic names based on category for realism
-    final String providerOne = categoryName == 'Plumbers' ? 'Musa Local Fixes' : 'Kintu Handyman Services';
-    final String providerTwo = categoryName == 'Electricians' ? 'Kampala Power Plugs' : 'Katwe Trade Experts';
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -560,44 +429,16 @@ class FilteredServicesScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Available $categoryName Near Kirinya',
+              'Available $categoryName',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary),
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: 2, // Mocking two specific tradespeople
-                itemBuilder: (context, index) {
-                  final currentName = index == 0 ? providerOne : providerTwo;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: screenBackground,
-                        child: Icon(Icons.person, color: brandPrimary),
-                      ),
-                      title: Text(
-                        currentName, 
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text('$categoryName • 4.8 Rating'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: brandPrimary),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProviderDetailScreen(providerName: currentName),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'No providers available in this category right now.',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
               ),
             ),
           ],
@@ -606,7 +447,6 @@ class FilteredServicesScreen extends StatelessWidget {
     );
   }
 }
-
 class AccountDetailsScreen extends StatefulWidget {
   const AccountDetailsScreen({super.key});
 
@@ -626,14 +466,26 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _locationController;
 
+  // Track if state repository has successfully populated fields
+  bool _hasPrepopulated = false;
+
   @override
   void initState() {
     super.initState();
-    // Pre-populate text controllers with live values from your new controller state
-    final profile = context.read<CustomerProfileController>().profile;
-    _nameController = TextEditingController(text: profile.name);
-    _phoneController = TextEditingController(text: profile.phone);
-    _locationController = TextEditingController(text: profile.location);
+    _nameController = TextEditingController();
+    _phoneController = TextEditingController();
+    _locationController = TextEditingController();
+    _loadLoggedInUserSession();
+  }
+
+  // 🚀 DIRECT DYNAMIC FALLBACK: Reads directly from active auth session (Kiden)
+  Future<void> _loadLoggedInUserSession() async {
+    final user = await AuthService().getCurrentUser();
+    if (user != null && mounted) {
+      setState(() {
+        _nameController.text = user.fullName;
+      });
+    }
   }
 
   @override
@@ -650,7 +502,7 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
-      builder: (context) => SafeArea(
+      builder: (_) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
@@ -692,10 +544,18 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     }
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
-    // Watches the customer profile state to automatically re-render when a photo changes
+    // Actively watches for profile model changes (like registration data)
     final profile = context.watch<CustomerProfileController>().profile;
+
+    // 🚀 THE FIX: Dynamically populates inputs once the state contains data, without overwriting active typing
+    if (!_hasPrepopulated && (profile.name.isNotEmpty || profile.phone.isNotEmpty || profile.location.isNotEmpty)) {
+      if (profile.name.isNotEmpty) _nameController.text = profile.name;
+      if (profile.phone.isNotEmpty) _phoneController.text = profile.phone;
+      if (profile.location.isNotEmpty) _locationController.text = profile.location;
+      _hasPrepopulated = true; 
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -703,7 +563,6 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Clickable avatar stack configured to load the path dynamically
             GestureDetector(
               onTap: _updatingPhoto ? null : _changeProfilePhoto,
               child: Stack(
@@ -724,17 +583,16 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
                     Positioned(
                       bottom: 0,
                       right: 4,
-                      child: CircleAvatar(
+                      child: const CircleAvatar(
                         radius: 18,
                         backgroundColor: brandSecondary,
-                        child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                        child: Icon(Icons.camera_alt, size: 16, color: Colors.white),
                       ),
                     ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            
             Container(
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
@@ -790,7 +648,6 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -802,13 +659,11 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
                 ),
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    // Saves inputs to state repository
                     context.read<CustomerProfileController>().updateProfileDetails(
                           name: _nameController.text.trim(),
                           phone: _phoneController.text.trim(),
                           location: _locationController.text.trim(),
                         );
-                        
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Profile details updated successfully!'),
@@ -827,102 +682,196 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   }
 }
 
+class BookingHistoryScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> bookings;
+  const BookingHistoryScreen({super.key, required this.bookings});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color brandPrimary = Color(0xFF005F73);
+    return bookings.isEmpty
+        ? const Center(
+            child: Text(
+              'No booking history found.',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: bookings.length,
+            itemBuilder: (context, index) {
+              final booking = bookings[index];
+              final String status = booking['status']?.toString() ?? '';
+              final String rating = booking['rating']?.toString() ?? '';
+              final bool isCompleted = status == 'Completed';
+              final bool hasRating = rating.isNotEmpty && rating != '0' && rating != '0.0';
+              Color statusColor = Colors.orange;
+              if (status == 'Completed') {
+                statusColor = Colors.green;
+              } else if (status == 'Cancelled') {
+                statusColor = Colors.red;
+              }
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: brandPrimary.withValues(alpha: 0.15),
+                      child: Icon(booking['icon'] is IconData ? booking['icon'] : Icons.assignment, color: brandPrimary),
+                    ),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            booking['provider'] ?? 'Unknown Provider',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isCompleted && hasRating)
+                          Row(
+                            children: [
+                              const Icon(Icons.star, color: Colors.amber, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                rating,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: brandPrimary),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${booking['category'] ?? ''} • ${booking['date'] ?? ''}',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              status,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+  }
+}
 
 class ActiveChatsDashboard extends StatelessWidget {
-  const ActiveChatsDashboard({super.key});
+  final List<Map<String, dynamic>> chatThreads;
+  const ActiveChatsDashboard({super.key, required this.chatThreads});
 
   @override
   Widget build(BuildContext context) {
     const Color brandPrimary = Color(0xFF005F73);
     const Color brandSecondary = Color(0xFF0A9396);
-
-    // Realistic simulation data mimicking real client provider threads
-    final List<Map<String, dynamic>> mockThreads = [
-      {
-        'name': 'Sarah\'s Tech Sparks',
-        'message': 'Web connection sorted! Let me know if you need...',
-        'time': '10:42 AM',
-        'isUnread': true, // Displays notification status indicator bubble
-        'icon': Icons.bolt,
-      },
-      {
-        'name': 'Kla Clean Plugs',
-        'message': 'I am arriving at Kirinya Centre near the station now.',
-        'time': 'Yesterday',
-        'isUnread': false,
-        'icon': Icons.water_drop,
-      },
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: mockThreads.length,
-      itemBuilder: (context, index) {
-        final thread = mockThreads[index];
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: brandPrimary.withValues(alpha: 0.1),
-              child: Icon(thread['icon'], color: brandPrimary),
+    return chatThreads.isEmpty
+        ? const Center(
+            child: Text(
+              'No active conversations yet.',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  thread['name'], 
-                  style: TextStyle(
-                    fontWeight: thread['isUnread'] ? FontWeight.bold : FontWeight.w600,
-                    color: brandPrimary,
-                    fontSize: 14,
-                  ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: chatThreads.length,
+            itemBuilder: (context, index) {
+              final thread = chatThreads[index];
+              final bool isUnread = thread['isUnread'] as bool? ?? false;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                Text(
-                  thread['time'], 
-                  style: TextStyle(
-                    fontSize: 11, 
-                    color: thread['isUnread'] ? brandSecondary : Colors.grey,
-                    fontWeight: thread['isUnread'] ? FontWeight.bold : FontWeight.normal,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                    child: Icon(thread['icon'] is IconData ? thread['icon'] : Icons.chat, color: brandPrimary),
                   ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                thread['message'],
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: thread['isUnread'] ? Colors.black87 : Colors.grey,
-                  fontWeight: thread['isUnread'] ? FontWeight.w500 : FontWeight.normal,
-                ),
-              ),
-            ),
-            trailing: thread['isUnread'] 
-              ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary) // Unread Alert Dot!
-              : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    providerName: thread['name'] ?? 'Provider', // Fallback for safety
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        thread['name'] ?? 'Provider',
+                        style: TextStyle(
+                          fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                          color: brandPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        thread['time'] ?? '',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isUnread ? brandSecondary : Colors.grey,
+                          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
-                 ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      thread['message'] ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isUnread ? Colors.black87 : Colors.grey,
+                        fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  trailing: isUnread
+                      ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary)
+                      : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          providerName: thread['name'] ?? 'Provider',
+                        ),
+                      ),
+                    );
+                  },  
+                ),
               );
             },
-          ),
-        );
-      },
-    );
+          );
   }
 }
-
-
