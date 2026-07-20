@@ -6,6 +6,7 @@ import '../models/chat_message.dart';
 import '../models/chat_thread.dart';
 import '../services/chat_service.dart';
 import '../widgets/message_bubble.dart';
+import 'leave_review_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatThread thread;
@@ -105,6 +106,20 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  void _openReviewScreen() {
+    final jobId = widget.thread.jobId;
+    if (jobId == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LeaveReviewScreen(
+          jobId: jobId,
+          plugName: widget.thread.plugName,
+          authToken: widget.authToken,
+        ),
+      ),
+    );
+  }
+
   void _handleTypingChange(String _) {
     _service.sendTyping(true);
     _typingDebounce?.cancel();
@@ -164,6 +179,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
+        actions: [
+          if (widget.thread.isConfirmedJob && widget.thread.jobId != null)
+            IconButton(
+              icon: const Icon(Icons.star_rate_rounded),
+              tooltip: 'Leave a review',
+              onPressed: _openReviewScreen,
+            ),
+        ],
       ),
       body: Column(
         children: [
