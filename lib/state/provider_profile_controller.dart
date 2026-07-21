@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/provider_profile.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'signup_session.dart';
 
 /// App-wide state for the logged-in provider (business) account.
@@ -11,6 +13,7 @@ import 'signup_session.dart';
 /// threads without prop-drilling.
 class ProviderProfileController extends ChangeNotifier {
   final ApiService _api = ApiService.instance;
+  final AuthService _authService = AuthService();
 
   String _email = '';
   ProviderProfile _profile = const ProviderProfile();
@@ -208,6 +211,23 @@ class ProviderProfileController extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
+    // Pull real business profile fields from Firestore's `providers`
+    // collection so the dashboard header shows actual data instead of
+    // placeholders.
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final data = await _authService.getProviderProfile(uid);
+      if (data != null) {
+        _profile = _profile.copyWith(
+          businessName: data['businessName'] ?? '',
+          tradeTitle: data['businessCategory'] ?? '',
+          district: data['district'] ?? '',
+          town: data['town'] ?? '',
+          isAvailable: data['available'] ?? true,
+        );
+      }
+    }
+
     final results = await Future.wait([
       _api.fetchJobRequests(),
       _api.fetchRatings(),
@@ -248,7 +268,7 @@ class ProviderProfileController extends ChangeNotifier {
   void updateService(String id, {String? title, String? description}) {
     _services = _services
         .map((s) =>
-            s.id == id ? s.copyWith(title: title, description: description) : s)
+    s.id == id ? s.copyWith(title: title, description: description) : s)
         .toList();
     notifyListeners();
   }
@@ -268,14 +288,14 @@ class ProviderProfileController extends ChangeNotifier {
   void markThreadRead(String threadId) {
     _threads = _threads
         .map((t) => t.id == threadId
-            ? ChatThread(
-                id: t.id,
-                customerName: t.customerName,
-                lastMessage: t.lastMessage,
-                time: t.time,
-                unreadCount: 0,
-              )
-            : t)
+        ? ChatThread(
+      id: t.id,
+      customerName: t.customerName,
+      lastMessage: t.lastMessage,
+      time: t.time,
+      unreadCount: 0,
+    )
+        : t)
         .toList();
     notifyListeners();
   }
