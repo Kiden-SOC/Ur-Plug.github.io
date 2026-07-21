@@ -410,7 +410,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               :_businessEmailController.text.trim(),
                           password: _passwordController.text,
                           fullName: role == 'consumer'
-                              ? _customerEmailController.text.trim() // Keeping your exact line mapping
+                              ? _fullNameController.text.trim() // Keeping your exact line mapping
                               : _businessNameController.text.trim(),
                           contact: role == 'consumer'
                               ? _customerPhoneController.text.trim()
