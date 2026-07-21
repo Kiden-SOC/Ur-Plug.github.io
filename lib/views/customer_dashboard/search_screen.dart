@@ -8,6 +8,7 @@ import 'provider_detail_screen.dart';
 import 'package:ur_plug/views/auth/login_screen.dart';
 import 'chat_screen.dart';
 import 'package:ur_plug/views/customer_dashboard/request_service_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -26,6 +27,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _filteredProviders = _allProviders;
     _filteredCategories = _allCategories;
     loadUser();
+    _loadProviders();
   }
 
   Future<void> loadUser() async {
@@ -36,6 +38,28 @@ class _SearchScreenState extends State<SearchScreen> {
         username = user.fullName;
       });
     }
+  }
+
+  Future<void> _loadProviders() async {
+    final snapshot = await FirebaseFirestore.instance.collection('providers').get();
+    final providers = snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'name': data['businessName'] ?? '',
+        'category': data['businessCategory'] ?? '',
+        'district': data['district'] ?? '',
+        'town': data['town'] ?? '',
+        'rating': data['rating']?.toString() ?? '0.0',
+        'jobs': data['completedJobs']?.toString() ?? '0',
+        'icon': Icons.person,
+      };
+    }).toList();
+
+    setState(() {
+      _allProviders.addAll(providers);
+      _filteredProviders = _allProviders;
+    });
   }
 
   // Brand Color Palette Configured Precisely
@@ -206,7 +230,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => ProviderDetailScreen(providerName: provider['name'] ?? ''),
+                                builder: (_) => ProviderDetailScreen(provider: provider),
                               ),
                             );
                           },
@@ -455,18 +479,25 @@ class AccountDetailsScreen extends StatefulWidget {
 }
 
 class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
-  static const Color brandPrimary = Color(0xFF005F73);      
-  static const Color brandSecondary = Color(0xFF0A9396);    
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
 
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   bool _updatingPhoto = false;
 
+  // Toggle between read-only view and editable form
+  bool _isEditing = false;
+
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _locationController;
 
-  // Track if state repository has successfully populated fields
+  // Store last-saved values so Cancel can restore them
+  String _savedName = '';
+  String _savedPhone = '';
+  String _savedLocation = '';
+
   bool _hasPrepopulated = false;
 
   @override
@@ -478,12 +509,19 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     _loadLoggedInUserSession();
   }
 
-  // 🚀 DIRECT DYNAMIC FALLBACK: Reads directly from active auth session (Kiden)
   Future<void> _loadLoggedInUserSession() async {
     final user = await AuthService().getCurrentUser();
     if (user != null && mounted) {
       setState(() {
         _nameController.text = user.fullName;
+        _phoneController.text = user.contact ?? '';
+        _locationController.text = '${user.town ?? ''}, ${user.district ?? ''}';
+
+        _savedName = _nameController.text;
+        _savedPhone = _phoneController.text;
+        _savedLocation = _locationController.text;
+
+        _hasPrepopulated = true;
       });
     }
   }
@@ -533,7 +571,7 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     setState(() => _updatingPhoto = true);
 
     final ok = await controller.setProfilePhoto(file.path);
-    
+
     if (!mounted) return;
     setState(() => _updatingPhoto = false);
 
@@ -544,17 +582,44 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
     }
   }
 
-    @override
+  Widget _readOnlyField(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: brandPrimary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(
+                  value.isEmpty ? '—' : value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Actively watches for profile model changes (like registration data)
     final profile = context.watch<CustomerProfileController>().profile;
 
-    // 🚀 THE FIX: Dynamically populates inputs once the state contains data, without overwriting active typing
     if (!_hasPrepopulated && (profile.name.isNotEmpty || profile.phone.isNotEmpty || profile.location.isNotEmpty)) {
       if (profile.name.isNotEmpty) _nameController.text = profile.name;
       if (profile.phone.isNotEmpty) _phoneController.text = profile.phone;
       if (profile.location.isNotEmpty) _locationController.text = profile.location;
-      _hasPrepopulated = true; 
+      _savedName = _nameController.text;
+      _savedPhone = _phoneController.text;
+      _savedLocation = _locationController.text;
+      _hasPrepopulated = true;
     }
 
     return SingleChildScrollView(
@@ -576,8 +641,8 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
                     child: _updatingPhoto
                         ? const CircularProgressIndicator(color: brandPrimary, strokeWidth: 3)
                         : profile.profilePhotoPath.isEmpty
-                            ? const Icon(Icons.person, size: 65, color: brandPrimary)
-                            : null,
+                        ? const Icon(Icons.person, size: 65, color: brandPrimary)
+                        : null,
                   ),
                   if (!_updatingPhoto)
                     Positioned(
@@ -609,72 +674,123 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Personal Information',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Personal Information',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary),
+                      ),
+                      if (!_isEditing)
+                        TextButton.icon(
+                          onPressed: () => setState(() => _isEditing = true),
+                          icon: const Icon(Icons.edit, size: 16, color: brandSecondary),
+                          label: const Text('Edit', style: TextStyle(color: brandSecondary)),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 18),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: const Icon(Icons.person_outline, color: brandPrimary),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+
+                  if (_isEditing) ...[
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Full Name',
+                        prefixIcon: const Icon(Icons.person_outline, color: brandPrimary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
                     ),
-                    validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      prefixIcon: const Icon(Icons.phone_android, color: brandPrimary),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        prefixIcon: const Icon(Icons.phone_android, color: brandPrimary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      validator: (value) => value!.isEmpty ? 'Phone number required' : null,
                     ),
-                    validator: (value) => value!.isEmpty ? 'Phone number required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _locationController,
-                    decoration: InputDecoration(
-                      labelText: 'Your Location',
-                      prefixIcon: const Icon(Icons.location_on_outlined, color: brandPrimary),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _locationController,
+                      decoration: InputDecoration(
+                        labelText: 'Your Location',
+                        prefixIcon: const Icon(Icons.location_on_outlined, color: brandPrimary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      validator: (value) => value!.isEmpty ? 'Location area required' : null,
                     ),
-                    validator: (value) => value!.isEmpty ? 'Location area required' : null,
-                  ),
+                  ] else ...[
+                    _readOnlyField('Full Name', _nameController.text, Icons.person_outline),
+                    _readOnlyField('Phone Number', _phoneController.text, Icons.phone_android),
+                    _readOnlyField('Your Location', _locationController.text, Icons.location_on_outlined),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandPrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    context.read<CustomerProfileController>().updateProfileDetails(
-                          name: _nameController.text.trim(),
-                          phone: _phoneController.text.trim(),
-                          location: _locationController.text.trim(),
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile details updated successfully!'),
-                        backgroundColor: brandSecondary,
+
+            if (_isEditing)
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: brandPrimary),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _nameController.text = _savedName;
+                            _phoneController.text = _savedPhone;
+                            _locationController.text = _savedLocation;
+                            _isEditing = false;
+                          });
+                        },
+                        child: const Text('Cancel', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
                       ),
-                    );
-                  }
-                },
-                child: const Text('Save Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            context.read<CustomerProfileController>().updateProfileDetails(
+                              name: _nameController.text.trim(),
+                              phone: _phoneController.text.trim(),
+                              location: _locationController.text.trim(),
+                            );
+                            _savedName = _nameController.text;
+                            _savedPhone = _phoneController.text;
+                            _savedLocation = _locationController.text;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Profile details updated successfully!'),
+                                backgroundColor: brandSecondary,
+                              ),
+                            );
+                            setState(() => _isEditing = false);
+                          }
+                        },
+                        child: const Text('Save Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
       ),

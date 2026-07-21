@@ -1,42 +1,134 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../../state/customer_profile_controller.dart';
 import 'chat_screen.dart';
 
 class ProviderDetailScreen extends StatelessWidget {
-  final String providerName;
-  const ProviderDetailScreen({super.key, required this.providerName});
+  final Map<String, dynamic> provider;
+  const ProviderDetailScreen({super.key, required this.provider});
 
-  // App Palette Configuration
-  static const Color brandPrimary = Color(0xFF005F73);      // Deep Ocean Teal
-  static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise       
-  static const Color screenBackground = Color(0xFFE0F2F1);  // Turquoise Ice Canvas
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
+  static const Color screenBackground = Color(0xFFE0F2F1);
+
+  Future<void> _requestProvider(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final customerProfile = context.read<CustomerProfileController>().profile;
+
+    await FirebaseFirestore.instance.collection('bookings').add({
+      'customerUid': user.uid,
+      'customerName': customerProfile.name.isNotEmpty ? customerProfile.name : 'Customer',
+      'providerUid': provider['id'] ?? '',
+      'providerName': provider['name'] ?? '',
+      'category': provider['category'] ?? '',
+      'status': 'pending',
+      'reviewed': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request sent! The provider will respond shortly.')),
+      );
+    }
+  }
+
+  void _showReviewDialog(BuildContext context) {
+    final commentController = TextEditingController();
+    double starRating = 5;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Leave a Review', style: TextStyle(fontWeight: FontWeight.bold, color: brandPrimary)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < starRating ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                    onPressed: () => setState(() => starRating = (index + 1).toDouble()),
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: commentController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Share your experience...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: brandPrimary, foregroundColor: Colors.white),
+              onPressed: () async {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) return;
+                final customerProfile = context.read<CustomerProfileController>().profile;
+                final providerId = provider['id'] ?? '';
+
+                await FirebaseFirestore.instance
+                    .collection('providers')
+                    .doc(providerId)
+                    .collection('reviews')
+                    .add({
+                  'customerUid': user.uid,
+                  'customerName': customerProfile.name.isNotEmpty ? customerProfile.name : 'Anonymous',
+                  'rating': starRating,
+                  'comment': commentController.text.trim(),
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Review submitted!')),
+                  );
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Dynamic fallback details based on trade for maximum presentation realism
-    final bool isElectrician = providerName.contains('Sparks') || providerName.contains('Power') || providerName.contains('Tech');
-    final String tradeTitle = isElectrician ? 'Certified Electrician' : 'Master Plumber & Pipefitter';
-    final String experienceText = isElectrician ? '6 Years' : '4 Years';
-    final String completedJobsText = isElectrician ? '42 Jobs' : '56 Jobs';
-    final String bioText = isElectrician 
-      ? 'Specialized in domestic house wiring, solar system installations, and emergency short-circuit fault finding across Kampala.'
-      : 'Expert in fixing broken pipes, water pump maintenance, toilet installations, and clearing clogged drainage systems.';
-
-    // Ur Plug Innovation: Smart landmark descriptors instead of raw device GPS
-    final String smartLocationMarker = isElectrician
-      ? 'Kirinya Trading Centre, near the TotalEnergies Station'
-      : 'Bweyogerere Stage, opposite the Mandela National Stadium area';
-
-    final List<String> specializations = isElectrician 
-      ? ['House Wiring', 'Fault Finding', 'Inverter Setup', 'Appliance Repair']
-      : ['Leak Detection', 'Drain Unclogging', 'Pump Service', 'Tap Installation'];
+    final String providerId = provider['id'] ?? '';
+    final String businessName = provider['name'] ?? 'Unnamed Business';
+    final String tradeTitle = provider['category'] ?? '';
+    final String district = provider['district'] ?? '';
+    final String town = provider['town'] ?? '';
+    final String rating = provider['rating'] ?? '0.0';
+    final String completedJobs = provider['jobs'] ?? '0';
 
     return Scaffold(
       backgroundColor: screenBackground,
       appBar: AppBar(
-        title: const Text(
-          'Provider Profile',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        title: const Text('Provider Profile', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -46,188 +138,158 @@ class ProviderDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. RICH PROFILE PROFILE CARD
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 45, 
-                    backgroundColor: brandPrimary.withValues(alpha: 0.1), 
-                    child: Icon(isElectrician ? Icons.bolt : Icons.plumbing, size: 45, color: brandPrimary)
+                    radius: 45,
+                    backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                    child: const Icon(Icons.storefront, size: 45, color: brandPrimary),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    providerName, 
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    tradeTitle, 
-                    style: const TextStyle(fontSize: 15, color: brandSecondary, fontWeight: FontWeight.w600)
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Verification Badge & Availability Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: brandSecondary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.verified, size: 14, color: brandSecondary),
-                            SizedBox(width: 4),
-                            Text('Verified Plug', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brandPrimary)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          children: [
-                            CircleAvatar(radius: 4, backgroundColor: Colors.green),
-                            SizedBox(width: 6),
-                            Text('Available Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  Text(businessName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary), textAlign: TextAlign.center),
+                  if (tradeTitle.isNotEmpty)
+                    Text(tradeTitle, style: const TextStyle(fontSize: 15, color: brandSecondary, fontWeight: FontWeight.w600)),
                   const Divider(height: 32),
-
-                  // Core Metrics Layout (Completely Stripped Financial Pricing Feature)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildMetricItem(Icons.history_toggle_off, 'Experience', experienceText),
-                      _buildMetricItem(Icons.task_alt, 'Completed', completedJobsText),
+                      _buildMetricItem(Icons.task_alt, 'Completed Jobs', completedJobs),
+                      _buildMetricItem(Icons.star, 'Rating', rating),
                     ],
                   )
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            
-            // 2. SMART LOCATION TECH HIGHLIGHT BLOCK
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.near_me, color: brandSecondary, size: 20),
-                      SizedBox(width: 8),
-                      Text('Smart Matched Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    smartLocationMarker,
-                    style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Matched using Ur Plug smart matching technique.',
-                    style: TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
 
-            // 3. SPECIALIZATIONS CHIP LAYOUT
-            const Text('Specializations', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: specializations.map((spec) {
-                return Chip(
-                  label: Text(spec, style: const TextStyle(fontSize: 12, color: brandPrimary, fontWeight: FontWeight.w500)),
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: brandPrimary.withValues(alpha: 0.15)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // 4. BUSINESS BIOGRAPHY
-            const Text('About Provider', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: brandPrimary)),
-            const SizedBox(height: 6),
-            Text(bioText, style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4)),
+            if (district.isNotEmpty || town.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.near_me, color: brandSecondary, size: 20),
+                        SizedBox(width: 8),
+                        Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text('$town, $district', style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
             const SizedBox(height: 24),
-            
-            // 5. PRIMARY CONTACT ACTION TRIGGER
+
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _requestProvider(context),
+                      icon: const Icon(Icons.handshake_outlined, size: 20),
+                      label: const Text('Request Provider', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: brandSecondary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ChatScreen(providerName: businessName)),
+                        );
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                      label: const Text('Message', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: brandPrimary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ChatScreen(providerName: providerName)),
-                  );
-                },
-                icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                label: const Text('Message Provider', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandPrimary,
-                  foregroundColor: Colors.white,
+              child: OutlinedButton.icon(
+                onPressed: () => _showReviewDialog(context),
+                icon: const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
+                label: const Text('Leave a Review', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: brandPrimary),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
             const SizedBox(height: 28),
-            
-            // 6. PUBLIC RATINGS FEED LOG
-            const Text('Verified Client Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary)),
+
+            const Text('Client Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary)),
             const SizedBox(height: 12),
-                        ListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildReviewCard(
-                  clientName: 'Atim Grace',
-                  reviewText: 'Arrived perfectly on time and sorted my wiring fault immediately. Highly recommended!',
-                  starRating: '5.0',
-                ),
-                _buildReviewCard(
-                  clientName: 'Nakyiwa Eleanor',
-                  reviewText: 'Fair pricing structure, prompt responses in-app, and professional behavior.',
-                  starRating: '4.8',
-                ),
-              ],
-            ),
+
+            if (providerId.isEmpty)
+              const Text('Reviews unavailable.', style: TextStyle(color: Colors.grey, fontSize: 13))
+            else
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('providers')
+                    .doc(providerId)
+                    .collection('reviews')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator(color: brandPrimary)),
+                    );
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text('No reviews yet.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    );
+                  }
+                  final reviews = snapshot.data!.docs;
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: reviews.length,
+                    itemBuilder: (context, index) {
+                      final data = reviews[index].data() as Map<String, dynamic>;
+                      return _buildReviewCard(
+                        clientName: data['customerName'] ?? 'Anonymous',
+                        reviewText: data['comment'] ?? '',
+                        starRating: (data['rating'] ?? 0).toString(),
+                      );
+                    },
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -248,10 +310,7 @@ class ProviderDetailScreen extends StatelessWidget {
   Widget _buildReviewCard({required String clientName, required String reviewText, required String starRating}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
         child: Column(
@@ -265,19 +324,7 @@ class ProviderDetailScreen extends StatelessWidget {
                   child: const Icon(Icons.person_outline, size: 16, color: brandPrimary),
                 ),
                 const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 13)),
-                    const Row(
-                      children: [
-                        Icon(Icons.check_circle, size: 11, color: brandSecondary),
-                        SizedBox(width: 4),
-                        Text('Hired Order Match', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      ],
-                    ),
-                  ],
-                ),
+                Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 13)),
                 const Spacer(),
                 Row(
                   children: [
@@ -288,12 +335,13 @@ class ProviderDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(reviewText, style: const TextStyle(color: Colors.black87, fontSize: 12.5, height: 1.4)),
+            if (reviewText.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(reviewText, style: const TextStyle(color: Colors.black87, fontSize: 12.5, height: 1.4)),
+            ],
           ],
         ),
       ),
     );
   }
 }
-
