@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'signup_screen.dart'; // Use your exact project folder structure here
 import 'package:ur_plug/views/customer_dashboard/search_screen.dart';
@@ -163,19 +164,29 @@ class _LoginScreenState extends State<LoginScreen> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: () {
+            onPressed: () async {
               final email = resetEmailController.text.trim();
               if (email.isNotEmpty) {
-                Navigator.pop(context); // Close dialog safely
+                try {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                  Navigator.pop(context); // Close dialog safely
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Password reset link successfully sent to $email'),
+                      backgroundColor: brandSecondary,
+                  ),
+                );
+              } on FirebaseAuthException catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Password reset link successfully sent to $email'),
-                    backgroundColor: brandSecondary,
+                    content: Text('Error: ${e.message}'),
+                    backgroundColor: Colors.red,
                   ),
                 );
               }
-            },
-            child: const Text('Send Reset Link', style: TextStyle(fontWeight: FontWeight.bold)),
+            }
+          },
+          child: const Text('Send Reset Link', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
