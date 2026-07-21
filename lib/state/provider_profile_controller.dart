@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/provider_profile.dart';
 import '../services/api_service.dart';
+import 'signup_session.dart';
 
 /// App-wide state for the logged-in provider (business) account.
 ///
@@ -17,6 +18,7 @@ class ProviderProfileController extends ChangeNotifier {
   List<JobRequest> _jobRequests = [];
   List<ProviderRating> _ratings = [];
   List<ChatThread> _threads = [];
+  List<TopCustomer> _topCustomers = [];
   bool _loading = false;
 
   String get email => _email;
@@ -25,7 +27,22 @@ class ProviderProfileController extends ChangeNotifier {
   List<JobRequest> get jobRequests => List.unmodifiable(_jobRequests);
   List<ProviderRating> get ratings => List.unmodifiable(_ratings);
   List<ChatThread> get threads => List.unmodifiable(_threads);
+  List<TopCustomer> get topCustomers => List.unmodifiable(_topCustomers);
   bool get loading => _loading;
+
+  /// Jobs the provider has accepted but not yet marked complete.
+  List<JobRequest> get ongoingJobs =>
+      _jobRequests.where((j) => j.status == JobStatus.accepted).toList();
+
+  /// Every job the provider has already acted on — accepted, declined or
+  /// completed — newest first, used for the job history log.
+  List<JobRequest> get jobHistory => _jobRequests
+      .where((j) => j.status != JobStatus.pending)
+      .toList()
+      .reversed
+      .toList();
+
+  int get ongoingJobCount => ongoingJobs.length;
 
   bool get needsOnboarding => !_profile.onboardingComplete;
 
@@ -51,6 +68,18 @@ class ProviderProfileController extends ChangeNotifier {
     final saved = await _api.fetchProviderProfile(email);
     if (saved != null) {
       _profile = saved;
+    } else {
+      // First login for this account — carry forward whatever was
+      // entered during sign up (business name, district, town) so
+      // onboarding doesn't ask for it a second time.
+      final signup = SignupSession.instance.forEmail(email);
+      if (signup != null) {
+        _profile = _profile.copyWith(
+          businessName: signup.businessName,
+          district: signup.district,
+          town: signup.town,
+        );
+      }
     }
 
     _loading = false;
@@ -153,12 +182,14 @@ class ProviderProfileController extends ChangeNotifier {
     double? latitude,
     double? longitude,
     required String district,
+    required String town,
     required String landmarkDescription,
   }) async {
     final updated = _profile.copyWith(
       latitude: latitude,
       longitude: longitude,
       district: district,
+      town: town,
       landmarkDescription: landmarkDescription,
     );
     final ok = await _api.saveProviderProfile(_email, updated);
@@ -181,11 +212,13 @@ class ProviderProfileController extends ChangeNotifier {
       _api.fetchJobRequests(),
       _api.fetchRatings(),
       _api.fetchChatThreads(),
+      _api.fetchTopCustomers(),
     ]);
 
     _jobRequests = results[0] as List<JobRequest>;
     _ratings = results[1] as List<ProviderRating>;
     _threads = results[2] as List<ChatThread>;
+    _topCustomers = results[3] as List<TopCustomer>;
     _loading = false;
     notifyListeners();
   }
@@ -255,6 +288,7 @@ class ProviderProfileController extends ChangeNotifier {
     _jobRequests = [];
     _ratings = [];
     _threads = [];
+    _topCustomers = [];
     notifyListeners();
   }
 }
