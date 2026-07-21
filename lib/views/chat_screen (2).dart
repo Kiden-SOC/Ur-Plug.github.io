@@ -5,8 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
 import '../models/chat_thread.dart';
 import '../services/chat_service.dart';
-import '../widgets/message_bubble.dart';
-import 'leave_review_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatThread thread;
@@ -106,20 +104,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
-  void _openReviewScreen() {
-    final jobId = widget.thread.jobId;
-    if (jobId == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LeaveReviewScreen(
-          jobId: jobId,
-          plugName: widget.thread.plugName,
-          authToken: widget.authToken,
-        ),
-      ),
-    );
-  }
-
   void _handleTypingChange(String _) {
     _service.sendTyping(true);
     _typingDebounce?.cancel();
@@ -179,14 +163,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
-        actions: [
-          if (widget.thread.isConfirmedJob && widget.thread.jobId != null)
-            IconButton(
-              icon: const Icon(Icons.star_rate_rounded),
-              tooltip: 'Leave a review',
-              onPressed: _openReviewScreen,
-            ),
-        ],
       ),
       body: Column(
         children: [
@@ -207,9 +183,41 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                return MessageBubble(
-                  message: msg,
-                  isMine: msg.isMine(widget.currentUserId),
+                final isMine = msg.isMine(widget.currentUserId);
+                
+                // INLINE TEXT CHAT BUBBLE LAYOUT
+                return Align(
+                  alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isMine ? const Color(0xFFDCF8C6) : Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(12),
+                        topRight: const Radius.circular(12),
+                        bottomLeft: Radius.circular(isMine ? 12 : 0),
+                        bottomRight: Radius.circular(isMine ? 0 : 12),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      msg.content,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
                 );
               },
             ),

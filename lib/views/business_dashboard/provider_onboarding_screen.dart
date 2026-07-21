@@ -48,11 +48,18 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
   // Step 3 — Location (entered manually by the provider)
   final _step3Key = GlobalKey<FormState>();
   final _districtController = TextEditingController();
+  final _townController = TextEditingController();
   final _landmarkController = TextEditingController();
 
   // Step 4 — Business / work photos
   final List<String> _businessPhotos = [];
   bool _addingPhoto = false;
+
+  // Whether District/Town/Business name arrived pre-filled from sign up,
+  // so Step 1 and Step 3 can tell the provider they don't need to
+  // retype them (just confirm or edit if something's changed).
+  bool _nameFromSignup = false;
+  bool _locationFromSignup = false;
 
   static const String _otherProfessionLabel = 'Other (type your own)';
 
@@ -81,11 +88,32 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // The controller's profile is already loaded by the time this screen
+    // shows (routeBusinessUser awaits initializeSession first), so any
+    // details carried over from sign up are ready to read right away.
+    final profile = context.read<ProviderProfileController>().profile;
+
+    if (profile.businessName.trim().isNotEmpty) {
+      _businessNameController.text = profile.businessName;
+      _nameFromSignup = true;
+    }
+    if (profile.district.trim().isNotEmpty &&
+        profile.town.trim().isNotEmpty) {
+      _districtController.text = profile.district;
+      _townController.text = profile.town;
+      _locationFromSignup = true;
+    }
+  }
+
+  @override
   void dispose() {
     _businessNameController.dispose();
     _customProfessionController.dispose();
     _bioController.dispose();
     _districtController.dispose();
+    _townController.dispose();
     _landmarkController.dispose();
     super.dispose();
   }
@@ -217,6 +245,7 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
       yearsOfExperience: _yearsOfExperience,
       bio: _bioController.text.trim(),
       district: _districtController.text.trim(),
+      town: _townController.text.trim(),
       landmarkDescription: _landmarkController.text.trim(),
       profilePhotoPath: _profilePhotoPath,
       businessPhotoPaths: List<String>.from(_businessPhotos),
@@ -412,6 +441,26 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
                 ? 'Please enter your business name'
                 : null,
           ),
+          if (_nameFromSignup) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    size: 14, color: AppColors.brandSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Carried over from sign up — edit it if anything\u2019s changed.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textMuted.withValues(alpha:0.9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _selectedProfession,
@@ -513,7 +562,7 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
                   divisions: 30,
                   activeColor: AppColors.brandSecondary,
                   inactiveColor:
-                      AppColors.brandPrimary.withValues(alpha: 0.15),
+                      AppColors.brandPrimary.withValues(alpha:0.15),
                   label: _yearsOfExperience >= 30
                       ? '30+'
                       : '$_yearsOfExperience',
@@ -548,7 +597,7 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
             style: TextStyle(
               fontSize: 11,
               fontStyle: FontStyle.italic,
-              color: AppColors.textMuted.withValues(alpha: 0.9),
+              color: AppColors.textMuted.withValues(alpha:0.9),
             ),
           ),
         ],
@@ -568,11 +617,37 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
         children: [
           const SectionTitle('Where can customers find you?'),
           const SizedBox(height: 4),
-          const Text(
-            'Tell us your district and a nearby landmark — this is exactly what we use to match you with nearby customers, so keep it accurate. You can update it any time, including later if you move.',
-            style: TextStyle(
+          Text(
+            _locationFromSignup
+                ? 'We\u2019ve already filled in the district and town from your sign up — just add a landmark below, or edit either field if anything\u2019s changed.'
+                : 'Tell us your district and a nearby landmark — this is exactly what we use to match you with nearby customers, so keep it accurate. You can update it any time, including later if you move.',
+            style: const TextStyle(
                 fontSize: 12, color: AppColors.textMuted, height: 1.4),
           ),
+          if (_locationFromSignup) ...[
+            const SizedBox(height: 12),
+            UrPlugCard(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle,
+                      size: 16, color: AppColors.brandSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'District and town added from your sign up details.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brandPrimary.withValues(alpha:0.85),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           UrPlugTextField(
             controller: _districtController,
@@ -581,6 +656,16 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
             icon: Icons.map,
             validator: (v) => v == null || v.trim().isEmpty
                 ? 'Please enter your district'
+                : null,
+          ),
+          const SizedBox(height: 16),
+          UrPlugTextField(
+            controller: _townController,
+            label: 'Town',
+            hint: 'e.g. Kireka, Bweyogerere, Ntinda',
+            icon: Icons.location_city,
+            validator: (v) => v == null || v.trim().isEmpty
+                ? 'Please enter your town'
                 : null,
           ),
           const SizedBox(height: 16),
@@ -711,3 +796,5 @@ class _ProviderOnboardingScreenState extends State<ProviderOnboardingScreen> {
     );
   }
 }
+
+

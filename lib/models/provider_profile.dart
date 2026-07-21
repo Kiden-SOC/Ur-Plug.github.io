@@ -7,6 +7,7 @@ class ProviderProfile {
   final int yearsOfExperience;
   final String bio;
   final String district;
+  final String town;                  // Town / area within the district
   final String landmarkDescription;   // Smart landmark descriptor, e.g. "Kirinya Trading Centre, near the TotalEnergies Station"
   final double? latitude;             // Auto-picked up at sign up, editable afterwards
   final double? longitude;
@@ -21,6 +22,7 @@ class ProviderProfile {
     this.yearsOfExperience = 0,
     this.bio = '',
     this.district = '',
+    this.town = '',
     this.landmarkDescription = '',
     this.latitude,
     this.longitude,
@@ -36,6 +38,7 @@ class ProviderProfile {
     int? yearsOfExperience,
     String? bio,
     String? district,
+    String? town,
     String? landmarkDescription,
     double? latitude,
     double? longitude,
@@ -50,6 +53,7 @@ class ProviderProfile {
       yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
       bio: bio ?? this.bio,
       district: district ?? this.district,
+      town: town ?? this.town,
       landmarkDescription: landmarkDescription ?? this.landmarkDescription,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
@@ -66,6 +70,7 @@ class ProviderProfile {
         'yearsOfExperience': yearsOfExperience,
         'bio': bio,
         'district': district,
+        'town': town,
         'landmarkDescription': landmarkDescription,
         'latitude': latitude,
         'longitude': longitude,
@@ -82,6 +87,7 @@ class ProviderProfile {
       yearsOfExperience: json['yearsOfExperience'] ?? 0,
       bio: json['bio'] ?? '',
       district: json['district'] ?? '',
+      town: json['town'] ?? '',
       landmarkDescription: json['landmarkDescription'] ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
@@ -168,6 +174,23 @@ class ChatThread {
     required this.lastMessage,
     required this.time,
     this.unreadCount = 0,
+  });
+}
+
+/// A customer who has repeatedly booked this provider — surfaced on the
+/// "Top Customers" screen so the provider can recognise their most loyal,
+/// highest-value clients at a glance.
+class TopCustomer {
+  final String customerName;
+  final int jobsCompleted;
+  final double averageRatingGiven;
+  final String lastServiceDate;
+
+  const TopCustomer({
+    required this.customerName,
+    required this.jobsCompleted,
+    required this.averageRatingGiven,
+    required this.lastServiceDate,
   });
 }
 

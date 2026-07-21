@@ -19,20 +19,11 @@ class ProviderChatScreen extends StatefulWidget {
 class _ProviderChatScreenState extends State<ProviderChatScreen> {
   final _scrollController = ScrollController();
 
-  late final List<ChatMessage> _messages = [
-    const ChatMessage(
-        text:
-            'Hello! I need help with a job at my place. Are you available this week?',
-        isMe: false),
-    const ChatMessage(
-        text:
-            'Hi there! Yes, I have openings from Wednesday afternoon. What is the issue exactly?',
-        isMe: true),
-    const ChatMessage(
-        text:
-            'The circuit breaker keeps tripping whenever we switch on the water heater.',
-        isMe: false),
-  ];
+  // No backend endpoint connected yet — the conversation starts empty.
+  // Once messaging is live, load the real message history for this
+  // thread here (e.g. via an ApiService.fetchMessages(threadId) call)
+  // instead of leaving this list empty.
+  final List<ChatMessage> _messages = [];
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,7 +44,6 @@ class _ProviderChatScreenState extends State<ProviderChatScreen> {
     _scrollToBottom();
   }
 
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -69,7 +59,7 @@ class _ProviderChatScreenState extends State<ProviderChatScreen> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              backgroundColor: Colors.white.withValues(alpha:0.2),
               child: const Icon(Icons.person_outline,
                   size: 16, color: Colors.white),
             ),
@@ -104,18 +94,47 @@ class _ProviderChatScreenState extends State<ProviderChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) =>
-                  ChatBubble(message: _messages[index]),
-            ),
+            child: _messages.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline,
+                              size: 44,
+                              color: AppColors.brandPrimary.withValues(alpha:0.25)),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No messages yet',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brandPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Start the conversation below.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 12, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) =>
+                        ChatBubble(message: _messages[index]),
+                  ),
           ),
           ChatComposerBar(
-            hintText: 'Type a message...',
-            onSendText: (text) => _sendText(text),
-          )
+            hintText: 'Reply to ${widget.customerName}...',
+            onSendText: _sendText,
+          ),
         ],
       ),
     );

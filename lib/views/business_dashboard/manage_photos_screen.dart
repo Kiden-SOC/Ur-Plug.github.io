@@ -48,41 +48,32 @@ class _ManagePhotosScreenState extends State<ManagePhotosScreen> {
     );
   }
 
-    Future<void> _changeProfilePhoto() async {
-    // 1. Grab the controller immediately at the very start (100% safe, no await has run yet)
-        final controller = context.read<ProviderProfileController>();
-
-        final source = await _askImageSource();
-          if (source == null) return;
-
-        final file = await _picker.pickImage(source: source, imageQuality: 82);
-          if (file == null) return;
-
-          if (!mounted) return;
-          setState(() => _updatingProfilePhoto = true);
-
-        // 2. Use the controller we saved earlier
-        final ok = await controller.setProfilePhoto(file.path);
-
-          if (!mounted) return;
-          setState(() => _updatingProfilePhoto = false);
-          if (!ok) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not update your profile photo.')),
-          );
-        }
-      }
-
-
-  Future<void> _addBusinessPhotos() async {
+  Future<void> _changeProfilePhoto() async {
+    final controller = context.read<ProviderProfileController>();
     final source = await _askImageSource();
     if (source == null) return;
+    final file = await _picker.pickImage(source: source, imageQuality: 82);
+    if (file == null) return;
 
-    // GUARD ADDED HERE TO PREVENT ASYNC GAP WARNING ON CONTEXT.READ
+    if(!mounted) return;
+    setState(() => _updatingProfilePhoto = true);
+    final ok = await controller.setProfilePhoto(file.path);
+    
     if (!mounted) return;
+    setState(() => _updatingProfilePhoto = false);
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update your profile photo.')),
+      );
+    }
+  }
 
-    setState(() => _addingPhoto = true);
+  Future<void> _addBusinessPhotos() async {
     final controller = context.read<ProviderProfileController>();
+    final source = await _askImageSource();
+    if (source == null) return;
+    
+    setState(() => _addingPhoto = true);
     try {
       if (source == ImageSource.camera) {
         final file = await _picker.pickImage(source: source, imageQuality: 82);
@@ -101,7 +92,9 @@ class _ManagePhotosScreenState extends State<ManagePhotosScreen> {
   }
 
   Future<void> _removeBusinessPhoto(String path) async {
-    await context.read<ProviderProfileController>().removeBusinessPhoto(path);
+    // FIX: Read controller state safely prior to async flow
+    final controller = context.read<ProviderProfileController>();
+    await controller.removeBusinessPhoto(path);
   }
 
   @override
