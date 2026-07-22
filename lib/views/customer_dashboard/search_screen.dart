@@ -189,7 +189,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   icon: const Icon(Icons.add_location_alt_outlined),
                   label: const Text(
-                    'Request Service Anywhere Else',
+                    'Add description',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   onPressed: () {

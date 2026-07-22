@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart'; 
 import '../../state/customer_profile_controller.dart';
 import 'customer_chat_screen.dart';
 import 'package:ur_plug/services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> provider;
@@ -23,10 +25,34 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   bool _alreadyRequested = false;
   bool _submitting = false;
 
+  // Added variables for the lecturer's pop-up requirement
+  final _dialogFormKey = GlobalKey<FormState>();
+  DateTime? _bookingDate;
+  TimeOfDay? _bookingTime;
+  final TextEditingController _dialogDistrictController = TextEditingController();
+  final TextEditingController _dialogTownController = TextEditingController();
+  final TextEditingController _dialogDetailsController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _checkExistingRequest();
+    
+    // Auto-populates district field using customer's profile location
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final profile = context.read<CustomerProfileController>().profile;
+        _dialogDistrictController.text = profile.location;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _dialogDistrictController.dispose();
+    _dialogTownController.dispose();
+    _dialogDetailsController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkExistingRequest() async {
@@ -53,7 +79,14 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
-  Future<void> _requestProvider() async {
+  // Updated to receive location, timing, and job parameters
+  Future<void> _requestProvider({
+    required String district,
+    required String town,
+    required String date,
+    required String time,
+    required String details,
+  }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -70,6 +103,11 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
       'category': widget.provider['category'] ?? '',
       'status': 'pending',
       'reviewed': false,
+      'district': district,
+      'town': town,
+      'date': date,
+      'time': time,
+      'details': details,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
@@ -84,10 +122,170 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
+  // The modal builder that requests Where, When, and What info
+  void _showInstantBookingDialog() {
+    final String providerName = widget.provider['name'] ?? 'Provider';
+    final String providerService = widget.provider['category'] ?? 'General Service';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  const Icon(Icons.bolt, color: brandPrimary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Book $providerName', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 18),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              content: Form(
+                key: _dialogFormKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('SERVICE REQUESTED', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
+                      const SizedBox(height: 4),
+                      Text(providerService, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      const Divider(height: 20),
+
+                      const Text('WHERE DO YOU NEED IT?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _dialogDistrictController,
+                        decoration: InputDecoration(
+                          labelText: 'District',
+                          prefixIcon: const Icon(Icons.map, size: 20, color: brandPrimary),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        validator: (value) => value!.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _dialogTownController,
+                        decoration: InputDecoration(
+                          labelText: 'Town / Specific Area',
+                          prefixIcon: const Icon(Icons.location_on, size: 20, color: brandPrimary),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        validator: (value) => value!.isEmpty ? 'Required' : null,
+                      ),
+                      const Divider(height: 24),
+
+                      const Text('WHEN DO YOU NEED IT?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(const Duration(days: 90)),
+                                );
+                                if (picked != null) setDialogState(() => _bookingDate = picked);
+                              },
+                              icon: const Icon(Icons.calendar_month, size: 16, color: brandPrimary),
+                              label: Text(
+                                _bookingDate == null ? 'Date' : DateFormat('yyyy-MM-dd').format(_bookingDate!), 
+                                style: const TextStyle(fontSize: 12, color: Colors.black87)
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                                if (picked != null) setDialogState(() => _bookingTime = picked);
+                              },
+                              icon: const Icon(Icons.access_time, size: 16, color: brandPrimary),
+                              label: Text(
+                                _bookingTime == null ? 'Time' : _bookingTime!.format(context), 
+                                style: const TextStyle(fontSize: 12, color: Colors.black87)
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+
+                      const Text('WHAT NEEDS TO BE DONE?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _dialogDetailsController,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'Describe your issue details here...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                                                validator: (value) => value!.isEmpty ? 'Please describe the problem' : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: brandPrimary, foregroundColor: Colors.white),
+                  onPressed: () {
+                    if (_dialogFormKey.currentState!.validate()) {
+                      if (_bookingDate == null || _bookingTime == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select both Date and Time!'), backgroundColor: Colors.orange),
+                        );
+                        return;
+                      }
+                      final String targetDistrict = _dialogDistrictController.text.trim();
+                      final String targetTown = _dialogTownController.text.trim();
+                      final String finalDate = DateFormat('yyyy-MM-dd').format(_bookingDate!);
+                      final String finalTime = _bookingTime!.format(context);
+                      final String issueDetails = _dialogDetailsController.text.trim();
+
+                      Navigator.of(dialogContext).pop();
+                      
+                      _requestProvider(
+                        district: targetDistrict,
+                        town: targetTown,
+                        date: finalDate,
+                        time: finalTime,
+                        details: issueDetails,
+                      );
+                    }
+                  },
+                  child: const Text('Request Service'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showReviewDialog(BuildContext context) {
     final commentController = TextEditingController();
     double starRating = 5;
-
+    
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -162,7 +360,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final String providerId = widget.provider['id'] ?? '';
     final String businessName = widget.provider['name'] ?? 'Unnamed Business';
@@ -245,7 +443,8 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   child: SizedBox(
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: (_checkingStatus || _alreadyRequested || _submitting) ? null : _requestProvider,
+                      // Changed from direct upload to now showing the lecturer's pop-up form
+                      onPressed: (_checkingStatus || _alreadyRequested || _submitting) ? null : _showInstantBookingDialog,
                       icon: _submitting
                           ? const SizedBox(
                         width: 16,
@@ -266,18 +465,84 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                                Expanded(
                   child: SizedBox(
                     height: 52,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ChatScreen(providerUid: providerId, providerName: businessName)),
+                        // Shows an options sheet to choose between Calling or Messaging
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.white,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) {
+                            return SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Contact Provider',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: brandPrimary),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ListTile(
+                                      leading: const CircleAvatar(
+                                        backgroundColor: Color(0xFFE0F2F1),
+                                        child: Icon(Icons.chat_bubble_outline, color: brandPrimary),
+                                      ),
+                                      title: const Text('Send a Message', style: TextStyle(fontWeight: FontWeight.w600)),
+                                      subtitle: const Text('Chat inside the application'),
+                                      onTap: () {
+                                        Navigator.pop(context); // Close sheet
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => ChatScreen(providerUid: providerId, providerName: businessName)),
+                                        );
+                                      },
+                                    ),
+                                    const Divider(height: 1),
+                                    ListTile(
+                                      leading: const CircleAvatar(
+                                        backgroundColor: Color(0xFFE0F2F1),
+                                        child: Icon(Icons.call_outlined, color: brandSecondary),
+                                      ),
+                                      title: const Text('Call Provider', style: TextStyle(fontWeight: FontWeight.w600)),
+                                      subtitle: const Text('Place a direct phone call'),
+                                      onTap: () async {
+                                        Navigator.pop(context); // Close sheet
+                                        
+                                        // Pulls phone dynamic variable directly from your provider map
+                                        final String phoneNumber = widget.provider['phone'] ?? '';
+                                        
+                                        if (phoneNumber.isNotEmpty) {
+                                          final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+                                          if (await canLaunchUrl(launchUri)) {
+                                            await launchUrl(launchUri);
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Could not launch the phone dialer.')),
+                                            );
+                                          }
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Provider phone number not available.')),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
-                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                      label: const Text('Message', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.contact_mail_outlined, size: 20),
+                      label: const Text('Contact', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: brandPrimary,
                         foregroundColor: Colors.white,
@@ -332,15 +597,19 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   }
                   final reviews = snapshot.data!.docs;
                   return ListView.builder(
-                    shrinkWrap: true,
+                    shrinkWrap: true,                    
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: reviews.length,
                     itemBuilder: (context, index) {
                       final data = reviews[index].data() as Map<String, dynamic>;
+                      final name = data['customerName'] ?? 'Anonymous';
+                      final comment = data['comment'] ?? '';
+                      final ratingValue = (data['rating'] ?? 5.0).toString();
+
                       return _buildReviewCard(
-                        clientName: data['customerName'] ?? 'Anonymous',
-                        reviewText: data['comment'] ?? '',
-                        starRating: (data['rating'] ?? 0).toString(),
+                        clientName: name,
+                        reviewText: comment,
+                        starRating: ratingValue,
                       );
                     },
                   );
