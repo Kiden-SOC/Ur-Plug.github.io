@@ -6,9 +6,10 @@ import '../../state/customer_profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'provider_detail_screen.dart';
 import 'package:ur_plug/views/auth/login_screen.dart';
-import 'chat_screen.dart';
+import 'customer_chat_screen.dart';
 import 'package:ur_plug/views/customer_dashboard/request_service_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -122,7 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
       case 2:
         return const AccountDetailsScreen();
       case 3:
-        return BookingHistoryScreen(bookings: _bookingHistory);
+        return const BookingHistoryScreen();
       case 0:
       default:
         return SingleChildScrollView(
@@ -798,111 +799,106 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   }
 }
 
+
 class BookingHistoryScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> bookings;
-  const BookingHistoryScreen({super.key, required this.bookings});
+  const BookingHistoryScreen({super.key});
+
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
 
   @override
   Widget build(BuildContext context) {
-    const Color brandPrimary = Color(0xFF005F73);
-    return bookings.isEmpty
-        ? const Center(
-            child: Text(
-              'No booking history found.',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              final booking = bookings[index];
-              final String status = booking['status']?.toString() ?? '';
-              final String rating = booking['rating']?.toString() ?? '';
-              final bool isCompleted = status == 'Completed';
-              final bool hasRating = rating.isNotEmpty && rating != '0' && rating != '0.0';
-              Color statusColor = Colors.orange;
-              if (status == 'Completed') {
-                statusColor = Colors.green;
-              } else if (status == 'Cancelled') {
-                statusColor = Colors.red;
-              }
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: brandPrimary.withValues(alpha: 0.15),
-                      child: Icon(booking['icon'] is IconData ? booking['icon'] : Icons.assignment, color: brandPrimary),
-                    ),
-                    title: Row(
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('bookings')
+          .where('customerUid', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: brandPrimary));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading bookings: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('No booking history found.', style: TextStyle(color: Colors.grey, fontSize: 14)));
+        }
+
+        final bookings = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            final doc = bookings[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final String status = data['status'] ?? 'pending';
+            final bool isCompleted = status == 'completed';
+
+            Color statusColor = Colors.orange;
+            if (status == 'completed') statusColor = Colors.green;
+            if (status == 'declined') statusColor = Colors.red;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 4))],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            booking['provider'] ?? 'Unknown Provider',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text(data['providerName'] ?? 'Unknown Provider', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                         ),
-                        if (isCompleted && hasRating)
-                          Row(
-                            children: [
-                              const Icon(Icons.star, color: Colors.amber, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                rating,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: brandPrimary),
-                              ),
-                            ],
-                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                          child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 10)),
+                        ),
                       ],
                     ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${booking['category'] ?? ''} • ${booking['date'] ?? ''}',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
+                    const SizedBox(height: 4),
+                    Text(data['category'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    if (isCompleted) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(side: const BorderSide(color: brandSecondary)),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProviderDetailScreen(provider: {
+                                  'id': data['providerUid'] ?? '',
+                                  'name': data['providerName'] ?? '',
+                                  'category': data['category'] ?? '',
+                                }),
                               ),
-                            ),
-                          ),
-                        ],
+                            );
+                          },
+                          child: const Text('Leave a Review', style: TextStyle(color: brandSecondary, fontWeight: FontWeight.bold)),
+                        ),
                       ),
-                    ),
-                  ),
+                    ],
+                  ],
                 ),
-              );
-            },
-          );
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -980,7 +976,8 @@ class ActiveChatsDashboard extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ChatScreen(
-                          providerName: thread['name'] ?? 'Provider',
+                          providerUid: thread['id'] ?? '',
+                          providerName: thread['name'] ?? '',
                         ),
                       ),
                     );

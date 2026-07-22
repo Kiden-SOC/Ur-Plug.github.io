@@ -94,7 +94,9 @@ class MessagesScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ProviderChatScreen(
-                              customerName: thread.customerName),
+                            customerUid: thread.id,
+                            customerName: thread.customerName,
+                          ),
                         ),
                       );
                     },
