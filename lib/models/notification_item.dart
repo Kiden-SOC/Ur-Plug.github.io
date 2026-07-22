@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum NotificationType { newMessage, newReview, jobStatus, unknown }
 
 class AppNotification {
@@ -19,25 +21,25 @@ class AppNotification {
     required this.createdAt,
   });
 
-  factory AppNotification.fromJson(Map<String, dynamic> json) {
+  factory AppNotification.fromFirestore(String id, Map<String, dynamic> doc) {
     return AppNotification(
-      id: json['id'].toString(),
-      type: _typeFromString(json['event_type']),
-      title: json['title'] ?? '',
-      body: json['body'] ?? '',
-      data: Map<String, dynamic>.from(json['data'] ?? {}),
-      isRead: json['is_read'] == true,
-      createdAt: DateTime.parse(json['created_at']),
+      id: id,
+      type: _typeFromString(doc['type']),
+      title: doc['title'] ?? '',
+      body: doc['body'] ?? '',
+      data: Map<String, dynamic>.from(doc['data'] ?? {}),
+      isRead: doc['isRead'] == true,
+      createdAt: (doc['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
   static NotificationType _typeFromString(String? s) {
     switch (s) {
-      case 'new_message':
+      case 'newMessage':
         return NotificationType.newMessage;
-      case 'new_review':
+      case 'newReview':
         return NotificationType.newReview;
-      case 'job_status':
+      case 'jobStatus':
         return NotificationType.jobStatus;
       default:
         return NotificationType.unknown;
