@@ -1,16 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/provider_profile.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'signup_session.dart';
 
-/// App-wide state for the logged-in provider (business) account.
-///
-/// Built on ChangeNotifier + the `provider` package so any widget can
-/// watch profile, service listings, job requests, ratings and chat
-/// threads without prop-drilling.
 class ProviderProfileController extends ChangeNotifier {
   final ApiService _api = ApiService.instance;
   final AuthService _authService = AuthService();
@@ -33,12 +29,9 @@ class ProviderProfileController extends ChangeNotifier {
   List<TopCustomer> get topCustomers => List.unmodifiable(_topCustomers);
   bool get loading => _loading;
 
-  /// Jobs the provider has accepted but not yet marked complete.
   List<JobRequest> get ongoingJobs =>
       _jobRequests.where((j) => j.status == JobStatus.accepted).toList();
 
-  /// Every job the provider has already acted on — accepted, declined or
-  /// completed — newest first, used for the job history log.
   List<JobRequest> get jobHistory => _jobRequests
       .where((j) => j.status != JobStatus.pending)
       .toList()
@@ -61,8 +54,6 @@ class ProviderProfileController extends ChangeNotifier {
   int get unreadMessageCount =>
       _threads.fold<int>(0, (sum, t) => sum + t.unreadCount);
 
-  /// Called right after a successful business login.
-  /// Loads any saved profile; if none exists the UI routes to onboarding.
   Future<void> initializeSession(String email) async {
     _email = email;
     _loading = true;
@@ -72,9 +63,6 @@ class ProviderProfileController extends ChangeNotifier {
     if (saved != null) {
       _profile = saved;
     } else {
-      // First login for this account — carry forward whatever was
-      // entered during sign up (business name, district, town) so
-      // onboarding doesn't ask for it a second time.
       final signup = SignupSession.instance.forEmail(email);
       if (signup != null) {
         _profile = _profile.copyWith(
@@ -89,7 +77,6 @@ class ProviderProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Persists the profile captured by the onboarding flow.
   Future<bool> completeOnboarding(ProviderProfile profile) async {
     final finished = profile.copyWith(onboardingComplete: true);
     final ok = await _api.saveProviderProfile(_email, finished);
@@ -100,7 +87,6 @@ class ProviderProfileController extends ChangeNotifier {
     return ok;
   }
 
-  /// Edit-profile updates after onboarding.
   Future<bool> updateProfile(ProviderProfile profile) async {
     final ok = await _api.saveProviderProfile(_email, profile);
     if (ok) {
@@ -115,12 +101,6 @@ class ProviderProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ------------------------------------------------------------
-  // PROFILE PHOTO
-  // ------------------------------------------------------------
-
-  /// Sets/replaces the provider's profile photo. Persists immediately and
-  /// notifies listeners so every screen showing the avatar updates at once.
   Future<bool> setProfilePhoto(String localPath) async {
     final updated = _profile.copyWith(profilePhotoPath: localPath);
     final ok = await _api.saveProviderProfile(_email, updated);
@@ -130,10 +110,6 @@ class ProviderProfileController extends ChangeNotifier {
     }
     return ok;
   }
-
-  // ------------------------------------------------------------
-  // BUSINESS / WORK PHOTOS (visible to customers)
-  // ------------------------------------------------------------
 
   Future<bool> addBusinessPhoto(String localPath) async {
     final updated = _profile.copyWith(
@@ -174,13 +150,6 @@ class ProviderProfileController extends ChangeNotifier {
     return ok;
   }
 
-  // ------------------------------------------------------------
-  // LOCATION (entered manually by the provider, editable afterwards)
-  // ------------------------------------------------------------
-
-  /// Updates the saved location. Because every screen reads location off
-  /// this single [_profile] instance, an update here is reflected
-  /// everywhere in the app automatically the moment it is saved.
   Future<bool> updateLocation({
     double? latitude,
     double? longitude,
@@ -211,45 +180,105 @@ class ProviderProfileController extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
-    // Pull real business profile fields from Firestore's `providers`
-    // collection so the dashboard header shows actual data instead of
-    // placeholders.
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      final data = await _authService.getProviderProfile(uid);
-      if (data != null) {
-        _profile = _profile.copyWith(
-          businessName: data['businessName'] ?? '',
-          tradeTitle: data['businessCategory'] ?? '',
-          district: data['district'] ?? '',
-          town: data['town'] ?? '',
-          isAvailable: data['available'] ?? true,
-        );
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid != null) {
+        final data = await _authService.getProviderProfile(uid);
+        if (data != null) {
+          _profile = _profile.copyWith(
+            businessName: data['businessName'] ?? '',
+            tradeTitle: data['businessCategory'] ?? '',
+            district: data['district'] ?? '',
+            town: data['town'] ?? '',
+            isAvailable: data['available'] ?? true,
+          );
+        }
+
+        final bookingsSnapshot = await FirebaseFirestore.instance
+            .collection('bookings')
+            .where('providerUid', isEqualTo: uid)
+            .orderBy('createdAt', descending: true)
+            .get();
+
+        _jobRequests = bookingsSnapshot.docs.map((doc) {
+          final b = doc.data();
+          return JobRequest(
+            id: doc.id,
+            customerUid: b['customerUid'] ?? '',
+            customerName: b['customerName'] ?? 'Customer',
+            serviceNeeded: b['category'] ?? '',
+            locationHint: b['town'] ?? b['district'] ?? '',
+            requestedTime: _formatTimestamp(b['createdAt']),
+            status: _mapStatus(b['status']),
+          );
+        }).toList();
       }
+
+      final results = await Future.wait([
+        _api.fetchRatings(),
+        _api.fetchChatThreads(),
+        _api.fetchTopCustomers(),
+      ]);
+
+      _ratings = results[0] as List<ProviderRating>;
+      _threads = results[1] as List<ChatThread>;
+      _topCustomers = results[2] as List<TopCustomer>;
+    } catch (e) {
+      debugPrint('loadDashboardData error: $e');
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
-
-    final results = await Future.wait([
-      _api.fetchJobRequests(),
-      _api.fetchRatings(),
-      _api.fetchChatThreads(),
-      _api.fetchTopCustomers(),
-    ]);
-
-    _jobRequests = results[0] as List<JobRequest>;
-    _ratings = results[1] as List<ProviderRating>;
-    _threads = results[2] as List<ChatThread>;
-    _topCustomers = results[3] as List<TopCustomer>;
-    _loading = false;
-    notifyListeners();
   }
 
-  void setJobStatus(String jobId, JobStatus status) {
+  JobStatus _mapStatus(String? status) {
+    switch (status) {
+      case 'accepted':
+        return JobStatus.accepted;
+      case 'declined':
+        return JobStatus.declined;
+      case 'completed':
+        return JobStatus.completed;
+      case 'pending':
+      default:
+        return JobStatus.pending;
+    }
+  }
+
+  String _formatTimestamp(dynamic ts) {
+    if (ts is Timestamp) {
+      final date = ts.toDate();
+      return '${date.day}/${date.month}/${date.year}';
+    }
+    return '';
+  }
+
+  /// Updates a job's status locally AND persists it to Firestore, so
+  /// Accept/Decline/Complete actions from JobRequestCard actually stick.
+  Future<void> setJobStatus(String jobId, JobStatus status) async {
     for (final job in _jobRequests) {
       if (job.id == jobId) {
         job.status = status;
       }
     }
     notifyListeners();
+
+    final statusString = status.toString().split('.').last;
+    await FirebaseFirestore.instance
+        .collection('bookings')
+        .doc(jobId)
+        .update({'status': statusString});
+
+    if (status == JobStatus.completed) {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance
+            .collection('providers')
+            .doc(uid)
+            .update({'completedJobs': FieldValue.increment(1)});
+      }
+    }
   }
 
   // ------------------------------------------------------------
@@ -300,7 +329,6 @@ class ProviderProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clears everything on logout.
   void clearSession() {
     _email = '';
     _profile = const ProviderProfile();
