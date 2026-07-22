@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/chat_thread.dart';
 import '../services/chat_service.dart';
-import 'chat_screen.dart';
+import 'customer_dashboard/customer_chat_screen.dart';
 
 class InboxScreen extends StatefulWidget {
   final String authToken;
@@ -63,9 +63,8 @@ class _InboxScreenState extends State<InboxScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => ChatScreen(
-                    thread: threads[index],
-                    authToken: widget.authToken,
-                    currentUserId: widget.currentUserId,
+                    providerUid: threads[index].plugId,
+                    providerName: threads[index].plugName,
                   ),
                 ),
               ),
