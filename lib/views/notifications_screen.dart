@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-import '../models/chat_thread.dart';
 import '../models/notification_item.dart';
 import '../services/notification_service.dart';
 import '../widgets/notification_tile.dart';
-import 'chat_screen.dart';
+import 'customer_dashboard/customer_chat_screen.dart';
 import 'reviews_list_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -62,22 +61,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     switch (notification.type) {
       case NotificationType.newMessage:
         final data = notification.data;
-        if (data['thread_id'] == null) return;
+        if (data['plug_id'] == null) return;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ChatScreen(
-              thread: ChatThread(
-                id: data['thread_id'].toString(),
-                plugId: data['plug_id']?.toString() ?? '',
-                plugName: data['plug_name'] ?? '',
-                plugAvatarUrl: data['plug_avatar_url'],
-                lastMessage: '',
-                lastMessageTime: DateTime.now(),
-                jobId: data['job_id']?.toString(),
-                isConfirmedJob: data['is_confirmed_job'] == true,
-              ),
-              authToken: widget.authToken,
-              currentUserId: data['current_user_id']?.toString() ?? '',
+              providerUid: data['plug_id'].toString(),
+              providerName: data['plug_name'] ?? '',
             ),
           ),
         );
@@ -97,7 +86,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         break;
       case NotificationType.jobStatus:
       case NotificationType.unknown:
-        // No dedicated job-detail screen yet — surface it inline for now.
+      // No dedicated job-detail screen yet — surface it inline for now.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(notification.body.isNotEmpty
               ? notification.body
@@ -129,17 +118,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _notifications.isEmpty
-              ? const Center(
-                  child: Text('No notifications yet.', style: TextStyle(color: Colors.black54)),
-                )
-              : ListView.separated(
-                  itemCount: _notifications.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) => NotificationTile(
-                    notification: _notifications[i],
-                    onTap: () => _handleTap(_notifications[i]),
-                  ),
-                ),
+          ? const Center(
+        child: Text('No notifications yet.', style: TextStyle(color: Colors.black54)),
+      )
+          : ListView.separated(
+        itemCount: _notifications.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) => NotificationTile(
+          notification: _notifications[i],
+          onTap: () => _handleTap(_notifications[i]),
+        ),
+      ),
     );
   }
 }
