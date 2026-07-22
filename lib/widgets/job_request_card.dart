@@ -146,7 +146,7 @@ class JobRequestCard extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              ProviderChatScreen(customerName: job.customerName),
+                              ProviderChatScreen(customerUid: job.customerUid, customerName: job.customerName),
                         ),
                       );
                     },
