@@ -1,139 +1,146 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../models/provider_profile.dart';
-import '../../widgets/chat_widgets.dart';
-
-/// Provider-side chat UI: same bubble language as the customer chat
-/// screen, but from the provider's perspective (customer on the left,
-/// provider replies on the right). Supports both text messages and
-/// recorded voice notes.
 class ProviderChatScreen extends StatefulWidget {
+  final String customerUid;
   final String customerName;
-  const ProviderChatScreen({super.key, required this.customerName});
+  const ProviderChatScreen({super.key, required this.customerUid, required this.customerName});
 
   @override
   State<ProviderChatScreen> createState() => _ProviderChatScreenState();
 }
 
 class _ProviderChatScreenState extends State<ProviderChatScreen> {
-  final _scrollController = ScrollController();
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
+  static const Color screenBackground = Color(0xFFE0F2F1);
 
-  // No backend endpoint connected yet — the conversation starts empty.
-  // Once messaging is live, load the real message history for this
-  // thread here (e.g. via an ApiService.fetchMessages(threadId) call)
-  // instead of leaving this list empty.
-  final List<ChatMessage> _messages = [];
+  final _messageController = TextEditingController();
+  late final String _chatId;
+  late final String _myUid;
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    _myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _chatId = _myUid.compareTo(widget.customerUid) < 0
+        ? '${_myUid}_${widget.customerUid}'
+        : '${widget.customerUid}_$_myUid';
   }
 
-  void _sendText(String text) {
-    setState(() {
-      _messages.add(ChatMessage(text: text, isMe: true));
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    _messageController.clear();
+
+    final chatRef = FirebaseFirestore.instance.collection('chats').doc(_chatId);
+    await chatRef.set({
+      'participants': [_myUid, widget.customerUid],
+      'lastMessage': text,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await chatRef.collection('messages').add({
+      'senderUid': _myUid,
+      'text': text,
+      'createdAt': FieldValue.serverTimestamp(),
     });
-    _scrollToBottom();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: screenBackground,
       appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white.withValues(alpha:0.2),
-              child: const Icon(Icons.person_outline,
-                  size: 16, color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.customerName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Text('Customer',
-                      style:
-                          TextStyle(fontSize: 11, color: Colors.white70)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.brandPrimary,
+        title: Text(widget.customerName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.chat_bubble_outline,
-                              size: 44,
-                              color: AppColors.brandPrimary.withValues(alpha:0.25)),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'No messages yet',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.brandPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Start the conversation below.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 12, color: AppColors.textMuted),
-                          ),
-                        ],
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chats')
+                  .doc(_chatId)
+                  .collection('messages')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator(color: brandPrimary));
+                }
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return const Center(child: Text('Say hello 👋', style: TextStyle(color: Colors.grey)));
+                }
+                return ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final bool isMe = data['senderUid'] == _myUid;
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                        decoration: BoxDecoration(
+                          color: isMe ? brandPrimary : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          data['text'] ?? '',
+                          style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 14.5),
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) =>
-                        ChatBubble(message: _messages[index]),
-                  ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-          ChatComposerBar(
-            hintText: 'Reply to ${widget.customerName}...',
-            onSendText: _sendText,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            color: Colors.white,
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: 'Type your message...',
+                        fillColor: screenBackground.withValues(alpha: 0.4),
+                        filled: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: brandSecondary,
+                    child: IconButton(icon: const Icon(Icons.send, color: Colors.white, size: 18), onPressed: _sendMessage),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

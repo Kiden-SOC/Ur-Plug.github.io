@@ -3,34 +3,81 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../state/customer_profile_controller.dart';
-import 'chat_screen.dart';
+import 'customer_chat_screen.dart';
+import 'package:ur_plug/services/auth_service.dart';
 
-class ProviderDetailScreen extends StatelessWidget {
+class ProviderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> provider;
   const ProviderDetailScreen({super.key, required this.provider});
 
+  @override
+  State<ProviderDetailScreen> createState() => _ProviderDetailScreenState();
+}
+
+class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   static const Color brandPrimary = Color(0xFF005F73);
   static const Color brandSecondary = Color(0xFF0A9396);
   static const Color screenBackground = Color(0xFFE0F2F1);
 
-  Future<void> _requestProvider(BuildContext context) async {
+  bool _checkingStatus = true;
+  bool _alreadyRequested = false;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingRequest();
+  }
+
+  Future<void> _checkExistingRequest() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final providerId = widget.provider['id'] ?? '';
+    if (user == null || providerId.isEmpty) {
+      setState(() => _checkingStatus = false);
+      return;
+    }
+
+    final existing = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('customerUid', isEqualTo: user.uid)
+        .where('providerUid', isEqualTo: providerId)
+        .where('status', whereIn: ['pending', 'accepted'])
+        .limit(1)
+        .get();
+
+    if (mounted) {
+      setState(() {
+        _alreadyRequested = existing.docs.isNotEmpty;
+        _checkingStatus = false;
+      });
+    }
+  }
+
+  Future<void> _requestProvider() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final customerProfile = context.read<CustomerProfileController>().profile;
+    setState(() => _submitting = true);
+
+    final currentUser = await AuthService().getCurrentUser();
+    final customerName = currentUser?.fullName ?? 'Customer';
 
     await FirebaseFirestore.instance.collection('bookings').add({
       'customerUid': user.uid,
-      'customerName': customerProfile.name.isNotEmpty ? customerProfile.name : 'Customer',
-      'providerUid': provider['id'] ?? '',
-      'providerName': provider['name'] ?? '',
-      'category': provider['category'] ?? '',
+      'customerName': customerName,
+      'providerUid': widget.provider['id'] ?? '',
+      'providerName': widget.provider['name'] ?? '',
+      'category': widget.provider['category'] ?? '',
       'status': 'pending',
       'reviewed': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    if (context.mounted) {
+    if (mounted) {
+      setState(() {
+        _alreadyRequested = true;
+        _submitting = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Request sent! The provider will respond shortly.')),
       );
@@ -86,7 +133,7 @@ class ProviderDetailScreen extends StatelessWidget {
                 final user = FirebaseAuth.instance.currentUser;
                 if (user == null) return;
                 final customerProfile = context.read<CustomerProfileController>().profile;
-                final providerId = provider['id'] ?? '';
+                final providerId = widget.provider['id'] ?? '';
 
                 await FirebaseFirestore.instance
                     .collection('providers')
@@ -117,13 +164,13 @@ class ProviderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String providerId = provider['id'] ?? '';
-    final String businessName = provider['name'] ?? 'Unnamed Business';
-    final String tradeTitle = provider['category'] ?? '';
-    final String district = provider['district'] ?? '';
-    final String town = provider['town'] ?? '';
-    final String rating = provider['rating'] ?? '0.0';
-    final String completedJobs = provider['jobs'] ?? '0';
+    final String providerId = widget.provider['id'] ?? '';
+    final String businessName = widget.provider['name'] ?? 'Unnamed Business';
+    final String tradeTitle = widget.provider['category'] ?? '';
+    final String district = widget.provider['district'] ?? '';
+    final String town = widget.provider['town'] ?? '';
+    final String rating = widget.provider['rating'] ?? '0.0';
+    final String completedJobs = widget.provider['jobs'] ?? '0';
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -198,11 +245,20 @@ class ProviderDetailScreen extends StatelessWidget {
                   child: SizedBox(
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: () => _requestProvider(context),
-                      icon: const Icon(Icons.handshake_outlined, size: 20),
-                      label: const Text('Request Provider', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      onPressed: (_checkingStatus || _alreadyRequested || _submitting) ? null : _requestProvider,
+                      icon: _submitting
+                          ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                          : Icon(_alreadyRequested ? Icons.check_circle_outline : Icons.handshake_outlined, size: 20),
+                      label: Text(
+                        _alreadyRequested ? 'Requested' : 'Request Provider',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: brandSecondary,
+                        backgroundColor: _alreadyRequested ? Colors.grey.shade400 : brandSecondary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
@@ -217,7 +273,7 @@ class ProviderDetailScreen extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => ChatScreen(providerName: businessName)),
+                          MaterialPageRoute(builder: (context) => ChatScreen(providerUid: providerId, providerName: businessName)),
                         );
                       },
                       icon: const Icon(Icons.chat_bubble_outline, size: 20),
