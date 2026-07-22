@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/notification_service.dart';
-import 'notifications_screen.dart';
+import '../views/notifications_screen.dart';
 
 class NotificationBell extends StatelessWidget {
   final NotificationService service;
