@@ -2,6 +2,7 @@
 /// Mirrors the fields displayed on the customer-facing
 /// provider_detail_screen.dart so both sides stay in sync.
 class ProviderProfile {
+  final String uid;
   final String businessName;
   final String tradeTitle;            // Profession / service, e.g. "Electrician" or a custom typed-in profession
   final int yearsOfExperience;
@@ -17,6 +18,7 @@ class ProviderProfile {
   final bool onboardingComplete;
 
   const ProviderProfile({
+    this.uid = '',
     this.businessName = '',
     this.tradeTitle = '',
     this.yearsOfExperience = 0,
@@ -33,6 +35,7 @@ class ProviderProfile {
   });
 
   ProviderProfile copyWith({
+    String? uid,
     String? businessName,
     String? tradeTitle,
     int? yearsOfExperience,
@@ -48,6 +51,7 @@ class ProviderProfile {
     bool? onboardingComplete,
   }) {
     return ProviderProfile(
+      uid: uid ?? this.uid,
       businessName: businessName ?? this.businessName,
       tradeTitle: tradeTitle ?? this.tradeTitle,
       yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
@@ -65,6 +69,7 @@ class ProviderProfile {
   }
 
   Map<String, dynamic> toJson() => {
+        'uid': uid,
         'businessName': businessName,
         'tradeTitle': tradeTitle,
         'yearsOfExperience': yearsOfExperience,
@@ -82,6 +87,7 @@ class ProviderProfile {
 
   factory ProviderProfile.fromJson(Map<String, dynamic> json) {
     return ProviderProfile(
+      uid: json['uid'] ?? '',
       businessName: json['businessName'] ?? '',
       tradeTitle: json['tradeTitle'] ?? '',
       yearsOfExperience: json['yearsOfExperience'] ?? 0,
@@ -129,6 +135,7 @@ enum JobStatus { pending, accepted, declined, completed }
 /// An incoming job request from a customer.
 class JobRequest {
   final String id;
+  final String customerUid;
   final String customerName;
   final String serviceNeeded;
   final String locationHint;
@@ -137,6 +144,7 @@ class JobRequest {
 
   JobRequest({
     required this.id,
+    required this.customerUid,
     required this.customerName,
     required this.serviceNeeded,
     required this.locationHint,
