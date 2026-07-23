@@ -441,7 +441,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         messenger.showSnackBar(
                           const SnackBar(
-                              content: Text('Account created successfully! Please log in.'),
+                              content: Text('Account created successfully! Welcome to URPLUG!!!'),
                           ),
                         );
                         if (role=='consumer') {
