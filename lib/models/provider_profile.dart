@@ -188,3 +188,105 @@ class ProviderProfile {
     );
   }
 }
+
+/// A service listing the provider offers on the marketplace.
+class ServiceListing {
+  final String id;
+  final String title;
+  final String description;
+  final bool isActive;
+
+  const ServiceListing({
+    required this.id,
+    required this.title,
+    required this.description,
+    this.isActive = true,
+  });
+
+  ServiceListing copyWith({String? title, String? description, bool? isActive}) {
+    return ServiceListing(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+enum JobStatus { pending, accepted, declined, completed }
+
+/// An incoming job request from a customer.
+class JobRequest {
+  final String id;
+  final String customerUid;
+  final String customerName;
+  final String customerPhone;        // Phone number for direct calls
+  final String serviceNeeded;
+  final String locationHint;
+  final String requestedTime;
+  final String jobDate;              // When the service is needed
+  final String jobTime;              // What time the service is needed
+  final String deadline;             // Deadline for completion
+  final String jobDescription;       // Full job description from customer
+  JobStatus status;
+
+  JobRequest({
+    required this.id,
+    required this.customerUid,
+    required this.customerName,
+    required this.customerPhone,
+    required this.serviceNeeded,
+    required this.locationHint,
+    required this.requestedTime,
+    required this.jobDate,
+    required this.jobTime,
+    required this.deadline,
+    required this.jobDescription,
+    this.status = JobStatus.pending,
+  });
+}
+
+/// A rating a customer left for this provider.
+class ProviderRating {
+  final String customerName;
+  final double stars;
+  final String comment;
+
+  ProviderRating({
+    required this.customerName,
+    required this.stars,
+    required this.comment,
+  });
+}
+
+/// A chat thread between provider and customer.
+class ChatThread {
+  final String id;
+  final String otherUserName;
+  final String lastMessage;
+  final DateTime lastMessageTime;
+  final int unreadCount;
+
+  ChatThread({
+    required this.id,
+    required this.otherUserName,
+    required this.lastMessage,
+    required this.lastMessageTime,
+    required this.unreadCount,
+  });
+}
+
+/// A top customer for a provider.
+class TopCustomer {
+  final String uid;
+  final String name;
+  final int jobCount;
+  final double rating;
+
+  TopCustomer({
+    required this.uid,
+    required this.name,
+    required this.jobCount,
+    required this.rating,
+  });
+}

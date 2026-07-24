@@ -6,6 +6,7 @@ import '../models/provider_profile.dart';
 import '../state/provider_profile_controller.dart';
 import '../views/business_dashboard/provider_chat_screen.dart';
 import 'shared_widgets.dart';
+import 'contact_modal.dart';
 
 /// Status pill matching a [JobStatus].
 StatusPill jobStatusPill(JobStatus status) {
@@ -96,8 +97,83 @@ class JobRequestCard extends StatelessWidget {
                       fontSize: 12, color: AppColors.textMuted)),
             ],
           ),
+          if (job.jobDate.isNotEmpty || job.jobTime.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 14, color: AppColors.brandSecondary),
+                const SizedBox(width: 4),
+                Text('${job.jobDate} at ${job.jobTime}',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textMuted)),
+              ],
+            ),
+          ],
+          if (job.deadline.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.flag, size: 14, color: Colors.orange),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text('Deadline: ${job.deadline}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+          ],
+          if (job.jobDescription.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.screenBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Job Description',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.brandSecondary)),
+                  const SizedBox(height: 4),
+                  Text(job.jobDescription,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textDark)),
+                ],
+              ),
+            ),
+          ],
           if (job.status == JobStatus.pending) ...[
             const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => ContactModal(
+                      contactName: job.customerName,
+                      phoneNumber: job.customerPhone,
+                      userUid: job.customerUid,
+                      userName: job.customerName,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.contact_phone),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandSecondary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                label: const Text('Contact Customer',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -137,6 +213,33 @@ class JobRequestCard extends StatelessWidget {
           ],
           if (job.status == JobStatus.accepted) ...[
             const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => ContactModal(
+                      contactName: job.customerName,
+                      phoneNumber: job.customerPhone,
+                      userUid: job.customerUid,
+                      userName: job.customerName,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.contact_phone),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandSecondary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                label: const Text('Contact Customer',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(

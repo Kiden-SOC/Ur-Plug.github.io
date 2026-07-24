@@ -207,9 +207,14 @@ class ProviderProfileController extends ChangeNotifier {
             id: doc.id,
             customerUid: b['customerUid'] ?? '',
             customerName: b['customerName'] ?? 'Customer',
+            customerPhone: b['customerPhone'] ?? '',
             serviceNeeded: b['category'] ?? '',
             locationHint: b['town'] ?? b['district'] ?? '',
             requestedTime: _formatTimestamp(b['createdAt']),
+            jobDate: b['jobDate'] ?? '',
+            jobTime: b['jobTime'] ?? '',
+            deadline: b['deadline'] ?? '',
+            jobDescription: b['details'] ?? '',
             status: _mapStatus(b['status']),
           );
         }).toList();
