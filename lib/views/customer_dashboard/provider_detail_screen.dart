@@ -367,8 +367,8 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final String tradeTitle = widget.provider['category'] ?? '';
     final String district = widget.provider['district'] ?? '';
     final String town = widget.provider['town'] ?? '';
-    final String rating = widget.provider['rating'] ?? '0.0';
-    final String completedJobs = widget.provider['jobs'] ?? '0';
+    final String rating = (widget.provider['rating'] ?? 0.0).toString();
+    final String completedJobs = (widget.provider['jobs'] ?? 0).toString();
 
     return Scaffold(
       backgroundColor: screenBackground,
