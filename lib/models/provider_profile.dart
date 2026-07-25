@@ -1,4 +1,3 @@
-
 class ProviderProfile {
   final String uid;
   final String businessName;
@@ -8,7 +7,6 @@ class ProviderProfile {
   final String district;
   final String town;
   final String landmarkDescription;
-
   
   final List<String> keywords;
   final double rating;

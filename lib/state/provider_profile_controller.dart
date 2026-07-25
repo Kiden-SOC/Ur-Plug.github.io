@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../models/chat_thread.dart';
 import '../models/provider_profile.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'signup_session.dart';
+import '../models/job_request.dart';
+import '../models/service_listing.dart';
+import '../models/provider_rating.dart';
+import '../models/top_customer.dart';
+
 
 class ProviderProfileController extends ChangeNotifier {
   final ApiService _api = ApiService.instance;
@@ -315,17 +320,11 @@ class ProviderProfileController extends ChangeNotifier {
   }
 
   void markThreadRead(String threadId) {
-    _threads = _threads
-        .map((t) => t.id == threadId
-        ? ChatThread(
-      id: t.id,
-      customerName: t.customerName,
-      lastMessage: t.lastMessage,
-      time: t.time,
-      unreadCount: 0,
-    )
-        : t)
-        .toList();
+    for (final t in _threads) {
+      if (t.id == threadId) {
+        t.unreadCount = 0;
+      }
+    }
     notifyListeners();
   }
 
