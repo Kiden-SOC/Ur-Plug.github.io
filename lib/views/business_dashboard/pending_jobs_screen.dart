@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../models/job_request.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/provider_profile.dart';
 import '../../state/provider_profile_controller.dart';

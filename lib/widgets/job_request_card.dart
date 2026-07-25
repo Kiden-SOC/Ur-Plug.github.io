@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../models/job_request.dart';
 import '../core/theme/app_colors.dart';
 import '../models/provider_profile.dart';
 import '../state/provider_profile_controller.dart';
 import '../views/business_dashboard/provider_chat_screen.dart';
 import 'shared_widgets.dart';
 
-/// Status pill matching a [JobStatus].
 StatusPill jobStatusPill(JobStatus status) {
   switch (status) {
     case JobStatus.pending:
@@ -25,11 +24,7 @@ StatusPill jobStatusPill(JobStatus status) {
   }
 }
 
-/// Card representation of a single job request, with contextual actions
-/// depending on its current status:
-///  • pending    → Accept / Decline
-///  • accepted   → Message Customer / Mark as Completed
-///  • completed / declined → read-only history entry
+
 class JobRequestCard extends StatelessWidget {
   final JobRequest job;
   const JobRequestCard({super.key, required this.job});

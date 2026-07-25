@@ -45,9 +45,12 @@ class AuthService {
         await _firestore.collection('providers').doc(uid).set({
           'businessName': businessName ?? '',
           'businessCategory': businessCategory ?? '',
+          'businessCategoryLower': (businessCategory ?? '').toLowerCase(),
           'businessEmailAddress' : email ?? '',
           'district': district,
+          'district Lower': district.toLowerCase(),   // typo guard below
           'town': town,
+          'townLower': town.toLowerCase(),
           'rating': 0,
           'completedJobs': 0,
           'available': true,
@@ -124,9 +127,18 @@ class AuthService {
   }) async {
     Map<String, dynamic> updates = {};
     if (businessName != null) updates['businessName'] = businessName;
-    if (businessCategory != null) updates['businessCategory'] = businessCategory;
-    if (district != null) updates['district'] = district;
-    if (town != null) updates['town'] = town;
+    if (businessCategory != null) {
+      updates['businessCategory'] = businessCategory;
+      updates['businessCategoryLower'] = businessCategory.toLowerCase();   // add this line
+    }
+    if (district != null) {
+      updates['district'] = district;
+      updates['districtLower'] = district.toLowerCase();
+    }
+    if (town != null) {
+      updates['town'] = town;
+      updates['townLower'] = town.toLowerCase();
+    }
     if (available != null) updates['available'] = available;
 
     if (updates.isNotEmpty) {

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../core/theme/app_colors.dart';
 import '../../state/provider_profile_controller.dart';
 import '../../widgets/shared_widgets.dart';
-
+import '../../models/top_customer.dart';
 /// Recognises the provider's most loyal customers — the ones who keep
 /// coming back — ranked by how many jobs they've booked.
 class TopCustomersScreen extends StatelessWidget {
