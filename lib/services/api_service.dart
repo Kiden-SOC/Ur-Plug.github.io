@@ -1,8 +1,11 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import '../models/provider_profile.dart';
+import '../models/job_request.dart';
+import '../models/provider_rating.dart';
+import '../models/top_customer.dart';
+import '../models/chat_thread.dart';
+
 
 /// Central API integration layer.
 ///
