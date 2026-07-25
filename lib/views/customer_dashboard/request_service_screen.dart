@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/customer_profile_controller.dart';
+import '../../services/matching_services.dart';
+import 'search_results_screen.dart';
 
 class RequestServiceScreen extends StatefulWidget {
   const RequestServiceScreen({super.key});
@@ -12,11 +14,11 @@ class RequestServiceScreen extends StatefulWidget {
 class _RequestServiceScreenState extends State<RequestServiceScreen> {
   // Brand Color Palette Configured Precisely
   static const Color brandPrimary = Color(0xFF005F73);      // Deep Ocean Teal
-  static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise       
+  static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise
   static const Color screenBackground = Color(0xFFE0F2F1);  // Turquoise Ice Canvas
 
   final _formKey = GlobalKey<FormState>();
-  
+
   // State variables for form tracking
   String? _selectedCategory;
   final TextEditingController _districtController = TextEditingController();
@@ -24,13 +26,17 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _customCategoryController = TextEditingController();
 
-  // Categories list matching your app's service layout
+  // Categories list — must match businessCategory values exactly as stored in Firestore
   final List<String> _categories = [
-    'Plumbers',
-    'Electricians',
-    'Carpenters',
-    'Catering & Decor',
-    'Mechanics',
+    'Plumbing',
+    'Electrician',
+    'Mechanic',
+    'Carpenter',
+    'Interior Design',
+    'Cleaner',
+    'Painter',
+    'Welder',
+    'Handyman',
     'Other Services',
   ];
 
@@ -51,7 +57,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
     super.dispose();
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: screenBackground,
@@ -178,24 +184,44 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Extracted execution strings ready for your partner's network hook
-                      final String category = _selectedCategory == 'Other Services' ? _customCategoryController.text.trim() : _selectedCategory!;
+                      final String category = _selectedCategory == 'Other Services'
+                          ? _customCategoryController.text.trim()
+                          : _selectedCategory!;
                       final String targetDistrict = _districtController.text.trim();
                       final String targetTown = _townController.text.trim();
                       final String details = _descriptionController.text.trim();
 
                       debugPrint('Request logged: Category: $category, District: $targetDistrict, Town: $targetTown, Details: $details');
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Searching for $category in $targetTown...'),
-                          backgroundColor: brandSecondary,
-                        ),
+                      // show a loading spinner while the real search runs
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(child: CircularProgressIndicator()),
                       );
 
-                      Navigator.pop(context);
+                      final result = await MatchingService().searchProviders(
+                        service: _selectedCategory == 'Other Services' ? '' : category,
+                        description: _selectedCategory == 'Other Services' ? category : details,
+                        district: targetDistrict,
+                        town: targetTown,
+                      );
+
+                      if (!context.mounted) return;
+                      Navigator.pop(context); // dismiss loading dialog
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SearchResultsScreen(
+                            category: category,
+                            town: targetTown,
+                            result: result,
+                          ),
+                        ),
+                      );
                     }
                   },
                   child: const Text(
