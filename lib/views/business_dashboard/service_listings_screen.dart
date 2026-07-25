@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../models/provider_profile.dart';
+import '../../models/service_listing.dart';
 import '../../state/provider_profile_controller.dart';
 import '../../widgets/shared_widgets.dart';
 

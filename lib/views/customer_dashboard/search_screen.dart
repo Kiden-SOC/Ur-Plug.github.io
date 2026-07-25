@@ -37,7 +37,10 @@ class _SearchScreenState extends State<SearchScreen> {
     if (user != null) {
       setState(() {
         username = user.fullName;
+        _userDistrict = user.district ?? '';
+        _userTown = user.town ?? '';
       });
+      _computeHighRated();
     }
   }
 
@@ -51,21 +54,66 @@ class _SearchScreenState extends State<SearchScreen> {
         'category': data['businessCategory'] ?? '',
         'district': data['district'] ?? '',
         'town': data['town'] ?? '',
-        'rating': data['rating']?.toString() ?? '0.0',
-        'jobs': data['completedJobs']?.toString() ?? '0',
+        'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+        'jobs': data['completedJobs'] ?? 0,
+        'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
         'icon': Icons.person,
       };
     }).toList();
 
     setState(() {
       _allProviders.addAll(providers);
-      _filteredProviders = _allProviders;
+      _filteredProviders = _highRatedProviders.isEmpty ? _allProviders : _highRatedProviders;
     });
+    _computeHighRated();
+  }
+
+  // Sorts all providers by score and keeps only the top 5 for the homepage strip
+  void _computeHighRated() {
+    final sorted = List<Map<String, dynamic>>.from(_allProviders);
+
+    sorted.sort((a, b) {
+      double scoreA = _score(a);
+      double scoreB = _score(b);
+      return scoreB.compareTo(scoreA);
+    });
+
+    setState(() {
+      _highRatedProviders = sorted.take(5).toList();
+      if (_searchController.text.isEmpty) {
+        _filteredProviders = _highRatedProviders;
+      }
+    });
+  }
+
+  String? _subRegionOf(String district) {
+    return districtSubRegion[district.trim().toLowerCase()];
+  }
+
+  double _score(Map<String, dynamic> provider) {
+    double score = 0;
+    final String providerDistrict = (provider['district'] ?? '').toString().toLowerCase();
+    final String userDistrictLower = _userDistrict.toLowerCase();
+
+    if (providerDistrict == userDistrictLower) {
+      score += 30; // exact district match
+    } else if (_subRegionOf(providerDistrict) != null &&
+        _subRegionOf(providerDistrict) == _subRegionOf(_userDistrict)) {
+      score += 15; // same sub-region, e.g. Wakiso ↔ Kampala
+    }
+
+    if ((provider['town'] ?? '').toString().toLowerCase() == _userTown.toLowerCase()) {
+      score += 20;
+    }
+    score += (provider['rating'] as double? ?? 0.0) * 10;
+    score += (provider['jobs'] as int? ?? 0) * 0.5;
+    score += (provider['responseRate'] as double? ?? 0.0) * 5;
+    return score;
   }
 
   // Brand Color Palette Configured Precisely
   static const Color brandPrimary = Color(0xFF005F73);      // Deep Ocean Teal
-  static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise       
+  static const Color brandSecondary = Color(0xFF0A9396);    // Rich Turquoise
   static const Color screenBackground = Color(0xFFE0F2F1);  // Turquoise Ice Canvas
 
   // Bottom Navigation Index State
@@ -74,26 +122,90 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // FRONTEND HOOKS: Clean local placeholders ready for backend data binding
   final List<Map<String, dynamic>> _allProviders = [];
-  final List<Map<String, dynamic>> _allCategories = [];
+  final List<Map<String, dynamic>> _allCategories = [
+    {'name': 'Plumbing', 'icon': Icons.plumbing},
+    {'name': 'Electrician', 'icon': Icons.electrical_services},
+    {'name': 'Mechanic', 'icon': Icons.car_repair},
+    {'name': 'Carpenter', 'icon': Icons.carpenter},
+    {'name': 'Cleaner', 'icon': Icons.cleaning_services},
+  ];
   final List<Map<String, dynamic>> _bookingHistory = [];
   final List<Map<String, dynamic>> _chatThreads = [];
 
-  // Dynamic filter lists initialized on startup
+
   List<Map<String, dynamic>> _filteredProviders = [];
   List<Map<String, dynamic>> _filteredCategories = [];
+
+  List<Map<String, dynamic>> _highRatedProviders = [];
+  String _userDistrict = '';
+  String _userTown = '';
+
+  final Map<String, String> districtSubRegion = {
+    'abim': 'karamoja', 'adjumani': 'west nile', 'agago': 'acholi',
+    'alebtong': 'lango', 'amolatar': 'lango', 'amudat': 'karamoja',
+    'amuria': 'teso', 'amuru': 'acholi', 'apac': 'lango',
+    'arua': 'west nile', 'budaka': 'bukedi', 'bududa': 'bugisu & sebei',
+    'bugiri': 'busoga', 'bugweri': 'busoga', 'buhweju': 'ankole',
+    'buikwe': 'kampala metropolitan area', 'bukedea': 'teso',
+    'bukomansimbi': 'south buganda', 'bukwo': 'bugisu & sebei',
+    'bulambuli': 'bugisu & sebei', 'buliisa': 'bunyoro',
+    'bundibugyo': 'toro', 'bunyangabu': 'toro', 'bushenyi': 'ankole',
+    'busia': 'bukedi', 'butaleja': 'bukedi', 'butambala': 'south buganda',
+    'butebo': 'bukedi', 'buvuma': 'kampala metropolitan area',
+    'buyende': 'busoga', 'dokolo': 'lango', 'gomba': 'south buganda',
+    'gulu': 'acholi', 'hoima': 'bunyoro', 'ibanda': 'ankole',
+    'iganga': 'busoga', 'isingiro': 'ankole', 'jinja': 'busoga',
+    'kaabong': 'karamoja', 'kabale': 'kigezi', 'kabarole': 'toro',
+    'kaberamaido': 'teso', 'kagadi': 'bunyoro', 'kakumiro': 'bunyoro',
+    'kalaki': 'teso', 'kalangala': 'south buganda', 'kaliro': 'busoga',
+    'kalungu': 'south buganda', 'kampala': 'kampala metropolitan area',
+    'kamuli': 'busoga', 'kamwenge': 'toro', 'kanungu': 'kigezi',
+    'kapchorwa': 'bugisu & sebei', 'kapelebyong': 'teso',
+    'karenga': 'karamoja', 'kasanda': 'north buganda', 'kasese': 'toro',
+    'katakwi': 'teso', 'kayunga': 'north buganda', 'kazo': 'ankole',
+    'kibaale': 'bunyoro', 'kiboga': 'north buganda', 'kibuku': 'bukedi',
+    'kikuube': 'bunyoro', 'kiruhura': 'ankole', 'kiryandongo': 'bunyoro',
+    'kisoro': 'kigezi', 'kitagwenda': 'toro', 'kitgum': 'acholi',
+    'koboko': 'west nile', 'kole': 'lango', 'kotido': 'karamoja',
+    'kumi': 'teso', 'kwania': 'lango', 'kween': 'bugisu & sebei',
+    'kyankwanzi': 'north buganda', 'kyegegwa': 'toro', 'kyenjojo': 'toro',
+    'kyotera': 'south buganda', 'lamwo': 'acholi', 'lira': 'lango',
+    'luuka': 'busoga', 'luwero': 'north buganda', 'lwengo': 'south buganda',
+    'lyantonde': 'south buganda', 'madi-okollo': 'west nile',
+    'manafwa': 'bugisu & sebei', 'maracha': 'west nile',
+    'masaka': 'south buganda', 'masindi': 'bunyoro', 'mayuge': 'busoga',
+    'mbale': 'bugisu & sebei', 'mbarara': 'ankole', 'mitooma': 'ankole',
+    'mityana': 'north buganda', 'moroto': 'karamoja', 'moyo': 'west nile',
+    'mpigi': 'south buganda', 'mubende': 'north buganda',
+    'mukono': 'kampala metropolitan area', 'nabilatuk': 'karamoja',
+    'nakapiripirit': 'karamoja', 'nakaseke': 'north buganda',
+    'nakasongola': 'north buganda', 'namayingo': 'busoga',
+    'namisindwa': 'bugisu & sebei', 'namutumba': 'busoga',
+    'napak': 'karamoja', 'nebbi': 'west nile', 'ngora': 'teso',
+    'ntoroko': 'toro', 'ntungamo': 'ankole', 'nwoya': 'acholi',
+    'obongi': 'west nile', 'omoro': 'acholi', 'otuke': 'lango',
+    'oyam': 'lango', 'pader': 'acholi', 'pakwach': 'west nile',
+    'pallisa': 'bukedi', 'rakai': 'south buganda', 'rubanda': 'kigezi',
+    'rubirizi': 'ankole', 'rukiga': 'kigezi', 'rukungiri': 'kigezi',
+    'rwampara': 'ankole', 'serere': 'teso', 'sheema': 'ankole',
+    'sironko': 'bugisu & sebei', 'soroti': 'teso', 'ssembabule': 'south buganda',
+    'terego': 'west nile', 'tororo': 'bukedi',
+    'wakiso': 'kampala metropolitan area', 'yumbe': 'west nile',
+    'zombo': 'west nile',
+  };
 
   // Active search filtering routine running locally
   void _runSearchFilter(String enteredKeyword) {
     List<Map<String, dynamic>> providerResults = [];
     List<Map<String, dynamic>> categoryResults = [];
-    
+
     if (enteredKeyword.isEmpty) {
-      providerResults = _allProviders;
+      providerResults = _highRatedProviders;
       categoryResults = _allCategories;
     } else {
       final query = enteredKeyword.toLowerCase();
       providerResults = _allProviders.where((item) =>
-          item['name'].toString().toLowerCase().contains(query) ||
+      item['name'].toString().toLowerCase().contains(query) ||
           item['category'].toString().toLowerCase().contains(query) ||
           (item['location'] ?? '').toString().toLowerCase().contains(query) ||
           (item['town'] ?? '').toString().toLowerCase().contains(query)
@@ -115,7 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-   // Helper builder method to manage dynamic screen views
+  // Helper builder method to manage dynamic screen views
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 1:
@@ -155,15 +267,15 @@ class _SearchScreenState extends State<SearchScreen> {
                   hintText: 'Search services, providers...',
                   hintStyle: TextStyle(color: brandPrimary.withValues(alpha: 0.5)),
                   prefixIcon: const Icon(Icons.search, color: brandPrimary),
-                  suffixIcon: _searchController.text.isNotEmpty 
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: brandPrimary),
-                        onPressed: () {
-                          _searchController.clear();
-                          _runSearchFilter('');
-                        },
-                      )
-                    : null,
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, color: brandPrimary),
+                    onPressed: () {
+                      _searchController.clear();
+                      _runSearchFilter('');
+                    },
+                  )
+                      : null,
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -173,7 +285,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
 
               // Supervisor Requirement Entry Route
@@ -214,95 +326,95 @@ class _SearchScreenState extends State<SearchScreen> {
               // The dynamic list remains completely unchanged...
 
 
-              _filteredProviders.isEmpty 
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text('No providers match your search.', style: TextStyle(color: Colors.grey)),
-                  )
-                : SizedBox(
-                    height: 175,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _filteredProviders.length,
-                      itemBuilder: (context, index) {
-                        final provider = _filteredProviders[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProviderDetailScreen(provider: provider),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: 155,
-                            margin: const EdgeInsets.only(right: 14, bottom: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                )
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 52,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: brandSecondary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        provider['icon'] is IconData ? provider['icon'] : Icons.person, 
-                                        color: brandPrimary, 
-                                        size: 26,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    provider['name'] ?? '',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    provider['category'] ?? '',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 11),
-                                  ),
-                                  const Spacer(),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.star, color: Colors.amber, size: 15),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          '${provider['rating'] ?? '0.0'} (${provider['jobs'] ?? '0 jobs'})',
-                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
+              _filteredProviders.isEmpty
+                  ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                child: Text('No providers match your search.', style: TextStyle(color: Colors.grey)),
+              )
+                  : SizedBox(
+                height: 175,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _filteredProviders.length,
+                  itemBuilder: (context, index) {
+                    final provider = _filteredProviders[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProviderDetailScreen(provider: provider),
                           ),
                         );
                       },
-                    ),
-                  ),
+                      child: Container(
+                        width: 155,
+                        margin: const EdgeInsets.only(right: 14, bottom: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            )
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 52,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: brandSecondary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    provider['icon'] is IconData ? provider['icon'] : Icons.person,
+                                    color: brandPrimary,
+                                    size: 26,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                provider['name'] ?? '',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                provider['category'] ?? '',
+                                style: const TextStyle(color: Colors.grey, fontSize: 11),
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star, color: Colors.amber, size: 15),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${provider['rating'] ?? '0.0'} (${provider['jobs'] ?? '0 jobs'})',
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 28),
 
               const Text(
@@ -311,63 +423,63 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               const SizedBox(height: 12),
 
-              _filteredCategories.isEmpty 
-                ? const Text('No categories match your search.', style: TextStyle(color: Colors.grey)) 
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredCategories.length,
-                    itemBuilder: (context, index) {
-                      final cat = _filteredCategories[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                            child: Icon(cat['icon'] is IconData ? cat['icon'] : Icons.category, color: brandPrimary),
+              _filteredCategories.isEmpty
+                  ? const Text('No categories match your search.', style: TextStyle(color: Colors.grey))
+                  : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _filteredCategories.length,
+                itemBuilder: (context, index) {
+                  final cat = _filteredCategories[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                        child: Icon(cat['icon'] is IconData ? cat['icon'] : Icons.category, color: brandPrimary),
+                      ),
+                      title: Text(
+                          cat['name'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary)
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: brandSecondary),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FilteredServicesScreen(categoryName: cat['name'] ?? ''),
                           ),
-                          title: Text(
-                            cat['name'] ?? '', 
-                            style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary)
-                          ),
-                          trailing: const Icon(Icons.chevron_right, color: brandSecondary),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => FilteredServicesScreen(categoryName: cat['name'] ?? ''),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         );
     }
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: screenBackground,
       appBar: AppBar(
         title: const Text(
-          'Ur Plug', 
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.white)
+            'Ur Plug',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.white)
         ),
         backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           Tooltip(
-            message: 'Logout from Ur Plug', 
+            message: 'Logout from Ur Plug',
             child: TextButton.icon(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
@@ -375,14 +487,14 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               icon: const Icon(Icons.logout, size: 20),
               label: const Text(
-                'Logout', 
+                'Logout',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
-                  context, 
-                  MaterialPageRoute(builder: (_) => const LoginScreen()), 
-                  (route) => false,
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
                 );
               },
             ),
@@ -912,79 +1024,79 @@ class ActiveChatsDashboard extends StatelessWidget {
     const Color brandSecondary = Color(0xFF0A9396);
     return chatThreads.isEmpty
         ? const Center(
-            child: Text(
-              'No active conversations yet.',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          )
+      child: Text(
+        'No active conversations yet.',
+        style: TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+    )
         : ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: chatThreads.length,
-            itemBuilder: (context, index) {
-              final thread = chatThreads[index];
-              final bool isUnread = thread['isUnread'] as bool? ?? false;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+      padding: const EdgeInsets.all(16.0),
+      itemCount: chatThreads.length,
+      itemBuilder: (context, index) {
+        final thread = chatThreads[index];
+        final bool isUnread = thread['isUnread'] as bool? ?? false;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: brandPrimary.withValues(alpha: 0.1),
+              child: Icon(thread['icon'] is IconData ? thread['icon'] : Icons.chat, color: brandPrimary),
+            ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  thread['name'] ?? 'Provider',
+                  style: TextStyle(
+                    fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                    color: brandPrimary,
+                    fontSize: 14,
+                  ),
                 ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                    child: Icon(thread['icon'] is IconData ? thread['icon'] : Icons.chat, color: brandPrimary),
+                Text(
+                  thread['time'] ?? '',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isUnread ? brandSecondary : Colors.grey,
+                    fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
                   ),
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        thread['name'] ?? 'Provider',
-                        style: TextStyle(
-                          fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
-                          color: brandPrimary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        thread['time'] ?? '',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isUnread ? brandSecondary : Colors.grey,
-                          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                thread['message'] ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isUnread ? Colors.black87 : Colors.grey,
+                  fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+            trailing: isUnread
+                ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary)
+                : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    providerUid: thread['id'] ?? '',
+                    providerName: thread['name'] ?? '',
                   ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      thread['message'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isUnread ? Colors.black87 : Colors.grey,
-                        fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  trailing: isUnread
-                      ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary)
-                      : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatScreen(
-                          providerUid: thread['id'] ?? '',
-                          providerName: thread['name'] ?? '',
-                        ),
-                      ),
-                    );
-                  },  
                 ),
               );
             },
-          );
+          ),
+        );
+      },
+    );
   }
 }
