@@ -159,7 +159,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
               ),
               const SizedBox(height: 18),
 
-              // 4. Job Details Multi-line Field
+              /*// 4. Job Details Multi-line Field
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
@@ -172,7 +172,7 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
                 ),
                 validator: (value) => value!.isEmpty ? 'Please give details about your request' : null,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 32),*/
 
               // 5. Submit Request Action Button
               SizedBox(
