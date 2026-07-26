@@ -47,44 +47,25 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadProviders() async {
     final snapshot = await FirebaseFirestore.instance.collection('providers').get();
-
-    List<Map<String, dynamic>> providers = [];
-
-    for (final doc in snapshot.docs) {
-      final providerData = doc.data();
-
-      // Fetch matching user document
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(doc.id)
-          .get();
-
-      final userData = userDoc.data();
-
-      providers.add({
+    final providers = snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
         'id': doc.id,
-        'name': providerData['businessName'] ?? '',
-        'category': providerData['businessCategory'] ?? '',
-        'phone': userData?['contact'] ?? '',
-        'district': providerData['district'] ?? '',
-        'town': providerData['town'] ?? '',
-        'rating': (providerData['rating'] as num?)?.toDouble() ?? 0.0,
-        'jobs': providerData['completedJobs'] ?? 0,
-        'responseRate':
-        (providerData['responseRate'] as num?)?.toDouble() ?? 0.0,
+        'name': data['businessName'] ?? '',
+        'category': data['businessCategory'] ?? '',
+        'district': data['district'] ?? '',
+        'town': data['town'] ?? '',
+        'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+        'jobs': data['completedJobs'] ?? 0,
+        'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
         'icon': Icons.person,
-      });
-    }
+      };
+    }).toList();
 
     setState(() {
-      _allProviders
-        ..clear()
-        ..addAll(providers);
-
-      _filteredProviders =
-      _highRatedProviders.isEmpty ? _allProviders : _highRatedProviders;
+      _allProviders.addAll(providers);
+      _filteredProviders = _highRatedProviders.isEmpty ? _allProviders : _highRatedProviders;
     });
-
     _computeHighRated();
   }
 
@@ -143,7 +124,11 @@ class _SearchScreenState extends State<SearchScreen> {
     {'name': 'Electrician', 'icon': Icons.electrical_services},
     {'name': 'Mechanic', 'icon': Icons.car_repair},
     {'name': 'Carpenter', 'icon': Icons.carpenter},
+    {'name': 'Interior Design', 'icon': Icons.design_services},
     {'name': 'Cleaner', 'icon': Icons.cleaning_services},
+    {'name': 'Painter', 'icon': Icons.format_paint},
+    {'name': 'Welder', 'icon': Icons.construction},
+    {'name': 'Handyman', 'icon': Icons.handyman},
   ];
   final List<Map<String, dynamic>> _bookingHistory = [];
   final List<Map<String, dynamic>> _chatThreads = [];
@@ -156,6 +141,9 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> _highRatedProviders = [];
   String _userDistrict = '';
   String _userTown = '';
+
+  // Shown above search results when we had to widen beyond the user's town/district
+  String? _searchScopeNotice;
 
   // Aliases so "plumber" search still matches providers stored as "Plumbing", etc.
   final Map<String, List<String>> categorySearchAliases = {
@@ -173,10 +161,13 @@ class _SearchScreenState extends State<SearchScreen> {
   String get _providerSectionTitle =>
       _searchController.text.isEmpty ? 'High Rated Services & Businesses' : 'Search Results';
 
-  // Active search filtering routine running locally
+  // Active search filtering routine running locally.
+  // Scopes results to same town first, falls back to same district,
+  // then falls back to nationwide as a last resort — matching MatchingService's tiered logic.
   void _runSearchFilter(String enteredKeyword) {
     List<Map<String, dynamic>> providerResults = [];
     List<Map<String, dynamic>> categoryResults = [];
+    String? scopeNotice;
 
     if (enteredKeyword.isEmpty) {
       providerResults = _highRatedProviders;
@@ -184,7 +175,7 @@ class _SearchScreenState extends State<SearchScreen> {
     } else {
       final query = enteredKeyword.toLowerCase();
 
-      providerResults = _allProviders.where((item) {
+      bool matchesQuery(Map<String, dynamic> item) {
         final name = item['name'].toString().toLowerCase();
         final category = item['category'].toString().toLowerCase();
         final town = (item['town'] ?? '').toString().toLowerCase();
@@ -192,13 +183,32 @@ class _SearchScreenState extends State<SearchScreen> {
         if (name.contains(query) || category.contains(query) || town.contains(query)) {
           return true;
         }
-
         final aliases = categorySearchAliases[category];
-        if (aliases != null && aliases.any((alias) => alias.contains(query))) {
-          return true;
+        return aliases != null && aliases.any((alias) => alias.contains(query));
+      }
+
+      final allMatches = _allProviders.where(matchesQuery).toList();
+
+      // Tier 1: same town
+      final sameTown = allMatches.where((p) =>
+      (p['town'] ?? '').toString().toLowerCase() == _userTown.toLowerCase()).toList();
+
+      // Tier 2: same district (any town)
+      final sameDistrict = allMatches.where((p) =>
+      (p['district'] ?? '').toString().toLowerCase() == _userDistrict.toLowerCase()).toList();
+
+      if (sameTown.isNotEmpty) {
+        providerResults = sameTown;
+      } else if (sameDistrict.isNotEmpty) {
+        providerResults = sameDistrict;
+        scopeNotice = 'No matches in $_userTown — showing results from $_userDistrict.';
+      } else {
+        // Tier 3: nationwide fallback
+        providerResults = allMatches;
+        if (allMatches.isNotEmpty) {
+          scopeNotice = 'No matches in $_userDistrict — showing results from other districts.';
         }
-        return false;
-      }).toList();
+      }
 
       providerResults.sort((a, b) => _score(b).compareTo(_score(a)));
 
@@ -209,6 +219,7 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _filteredProviders = providerResults;
       _filteredCategories = categoryResults;
+      _searchScopeNotice = scopeNotice;
     });
   }
 
@@ -312,6 +323,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 _providerSectionTitle,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
               ),
+              if (_searchScopeNotice != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 8),
+                  child: Text(
+                    _searchScopeNotice!,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
+                  ),
+                ),
               const SizedBox(height: 12),
 
               // The dynamic list remains completely unchanged...
@@ -600,7 +619,6 @@ class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
           .where('businessCategoryLower', isEqualTo: categoryLower)
           .where('available', isEqualTo: true)
           .get();
-
 
       final providers = snapshot.docs.map((doc) {
         final data = doc.data();
