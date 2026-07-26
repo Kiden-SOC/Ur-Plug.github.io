@@ -124,11 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
     {'name': 'Electrician', 'icon': Icons.electrical_services},
     {'name': 'Mechanic', 'icon': Icons.car_repair},
     {'name': 'Carpenter', 'icon': Icons.carpenter},
-    {'name': 'Interior Design', 'icon': Icons.design_services},
     {'name': 'Cleaner', 'icon': Icons.cleaning_services},
-    {'name': 'Painter', 'icon': Icons.format_paint},
-    {'name': 'Welder', 'icon': Icons.construction},
-    {'name': 'Handyman', 'icon': Icons.handyman},
   ];
   final List<Map<String, dynamic>> _bookingHistory = [];
   final List<Map<String, dynamic>> _chatThreads = [];
@@ -303,7 +299,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   icon: const Icon(Icons.add_location_alt_outlined),
                   label: const Text(
-                    'Add description',
+                    'Find Providers Elsewhere',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   onPressed: () {
