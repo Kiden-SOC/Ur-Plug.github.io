@@ -10,6 +10,7 @@ import 'customer_chat_screen.dart';
 import 'package:ur_plug/views/customer_dashboard/request_service_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../utils/uganda_districts.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -46,25 +47,44 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadProviders() async {
     final snapshot = await FirebaseFirestore.instance.collection('providers').get();
-    final providers = snapshot.docs.map((doc) {
-      final data = doc.data();
-      return {
+
+    List<Map<String, dynamic>> providers = [];
+
+    for (final doc in snapshot.docs) {
+      final providerData = doc.data();
+
+      // Fetch matching user document
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doc.id)
+          .get();
+
+      final userData = userDoc.data();
+
+      providers.add({
         'id': doc.id,
-        'name': data['businessName'] ?? '',
-        'category': data['businessCategory'] ?? '',
-        'district': data['district'] ?? '',
-        'town': data['town'] ?? '',
-        'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
-        'jobs': data['completedJobs'] ?? 0,
-        'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
+        'name': providerData['businessName'] ?? '',
+        'category': providerData['businessCategory'] ?? '',
+        'phone': userData?['contact'] ?? '',
+        'district': providerData['district'] ?? '',
+        'town': providerData['town'] ?? '',
+        'rating': (providerData['rating'] as num?)?.toDouble() ?? 0.0,
+        'jobs': providerData['completedJobs'] ?? 0,
+        'responseRate':
+        (providerData['responseRate'] as num?)?.toDouble() ?? 0.0,
         'icon': Icons.person,
-      };
-    }).toList();
+      });
+    }
 
     setState(() {
-      _allProviders.addAll(providers);
-      _filteredProviders = _highRatedProviders.isEmpty ? _allProviders : _highRatedProviders;
+      _allProviders
+        ..clear()
+        ..addAll(providers);
+
+      _filteredProviders =
+      _highRatedProviders.isEmpty ? _allProviders : _highRatedProviders;
     });
+
     _computeHighRated();
   }
 
@@ -86,10 +106,6 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  String? _subRegionOf(String district) {
-    return districtSubRegion[district.trim().toLowerCase()];
-  }
-
   double _score(Map<String, dynamic> provider) {
     double score = 0;
     final String providerDistrict = (provider['district'] ?? '').toString().toLowerCase();
@@ -97,8 +113,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
     if (providerDistrict == userDistrictLower) {
       score += 30; // exact district match
-    } else if (_subRegionOf(providerDistrict) != null &&
-        _subRegionOf(providerDistrict) == _subRegionOf(_userDistrict)) {
+    } else if (subRegionOf(providerDistrict) != null &&
+        subRegionOf(providerDistrict) == subRegionOf(_userDistrict)) {
       score += 15; // same sub-region, e.g. Wakiso ↔ Kampala
     }
 
@@ -132,67 +148,30 @@ class _SearchScreenState extends State<SearchScreen> {
   final List<Map<String, dynamic>> _bookingHistory = [];
   final List<Map<String, dynamic>> _chatThreads = [];
 
-
+  // Dynamic filter lists initialized on startup
   List<Map<String, dynamic>> _filteredProviders = [];
   List<Map<String, dynamic>> _filteredCategories = [];
 
+  // High-rated / proximity scoring state
   List<Map<String, dynamic>> _highRatedProviders = [];
   String _userDistrict = '';
   String _userTown = '';
 
-  final Map<String, String> districtSubRegion = {
-    'abim': 'karamoja', 'adjumani': 'west nile', 'agago': 'acholi',
-    'alebtong': 'lango', 'amolatar': 'lango', 'amudat': 'karamoja',
-    'amuria': 'teso', 'amuru': 'acholi', 'apac': 'lango',
-    'arua': 'west nile', 'budaka': 'bukedi', 'bududa': 'bugisu & sebei',
-    'bugiri': 'busoga', 'bugweri': 'busoga', 'buhweju': 'ankole',
-    'buikwe': 'kampala metropolitan area', 'bukedea': 'teso',
-    'bukomansimbi': 'south buganda', 'bukwo': 'bugisu & sebei',
-    'bulambuli': 'bugisu & sebei', 'buliisa': 'bunyoro',
-    'bundibugyo': 'toro', 'bunyangabu': 'toro', 'bushenyi': 'ankole',
-    'busia': 'bukedi', 'butaleja': 'bukedi', 'butambala': 'south buganda',
-    'butebo': 'bukedi', 'buvuma': 'kampala metropolitan area',
-    'buyende': 'busoga', 'dokolo': 'lango', 'gomba': 'south buganda',
-    'gulu': 'acholi', 'hoima': 'bunyoro', 'ibanda': 'ankole',
-    'iganga': 'busoga', 'isingiro': 'ankole', 'jinja': 'busoga',
-    'kaabong': 'karamoja', 'kabale': 'kigezi', 'kabarole': 'toro',
-    'kaberamaido': 'teso', 'kagadi': 'bunyoro', 'kakumiro': 'bunyoro',
-    'kalaki': 'teso', 'kalangala': 'south buganda', 'kaliro': 'busoga',
-    'kalungu': 'south buganda', 'kampala': 'kampala metropolitan area',
-    'kamuli': 'busoga', 'kamwenge': 'toro', 'kanungu': 'kigezi',
-    'kapchorwa': 'bugisu & sebei', 'kapelebyong': 'teso',
-    'karenga': 'karamoja', 'kasanda': 'north buganda', 'kasese': 'toro',
-    'katakwi': 'teso', 'kayunga': 'north buganda', 'kazo': 'ankole',
-    'kibaale': 'bunyoro', 'kiboga': 'north buganda', 'kibuku': 'bukedi',
-    'kikuube': 'bunyoro', 'kiruhura': 'ankole', 'kiryandongo': 'bunyoro',
-    'kisoro': 'kigezi', 'kitagwenda': 'toro', 'kitgum': 'acholi',
-    'koboko': 'west nile', 'kole': 'lango', 'kotido': 'karamoja',
-    'kumi': 'teso', 'kwania': 'lango', 'kween': 'bugisu & sebei',
-    'kyankwanzi': 'north buganda', 'kyegegwa': 'toro', 'kyenjojo': 'toro',
-    'kyotera': 'south buganda', 'lamwo': 'acholi', 'lira': 'lango',
-    'luuka': 'busoga', 'luwero': 'north buganda', 'lwengo': 'south buganda',
-    'lyantonde': 'south buganda', 'madi-okollo': 'west nile',
-    'manafwa': 'bugisu & sebei', 'maracha': 'west nile',
-    'masaka': 'south buganda', 'masindi': 'bunyoro', 'mayuge': 'busoga',
-    'mbale': 'bugisu & sebei', 'mbarara': 'ankole', 'mitooma': 'ankole',
-    'mityana': 'north buganda', 'moroto': 'karamoja', 'moyo': 'west nile',
-    'mpigi': 'south buganda', 'mubende': 'north buganda',
-    'mukono': 'kampala metropolitan area', 'nabilatuk': 'karamoja',
-    'nakapiripirit': 'karamoja', 'nakaseke': 'north buganda',
-    'nakasongola': 'north buganda', 'namayingo': 'busoga',
-    'namisindwa': 'bugisu & sebei', 'namutumba': 'busoga',
-    'napak': 'karamoja', 'nebbi': 'west nile', 'ngora': 'teso',
-    'ntoroko': 'toro', 'ntungamo': 'ankole', 'nwoya': 'acholi',
-    'obongi': 'west nile', 'omoro': 'acholi', 'otuke': 'lango',
-    'oyam': 'lango', 'pader': 'acholi', 'pakwach': 'west nile',
-    'pallisa': 'bukedi', 'rakai': 'south buganda', 'rubanda': 'kigezi',
-    'rubirizi': 'ankole', 'rukiga': 'kigezi', 'rukungiri': 'kigezi',
-    'rwampara': 'ankole', 'serere': 'teso', 'sheema': 'ankole',
-    'sironko': 'bugisu & sebei', 'soroti': 'teso', 'ssembabule': 'south buganda',
-    'terego': 'west nile', 'tororo': 'bukedi',
-    'wakiso': 'kampala metropolitan area', 'yumbe': 'west nile',
-    'zombo': 'west nile',
+  // Aliases so "plumber" search still matches providers stored as "Plumbing", etc.
+  final Map<String, List<String>> categorySearchAliases = {
+    'plumbing': ['plumber', 'plumbers', 'plumbing'],
+    'electrician': ['electrician', 'electricians', 'electrical'],
+    'mechanic': ['mechanic', 'mechanics'],
+    'carpenter': ['carpenter', 'carpenters', 'carpentry'],
+    'interior design': ['interior design', 'interior designer', 'decor'],
+    'cleaner': ['cleaner', 'cleaners', 'cleaning'],
+    'painter': ['painter', 'painters', 'painting'],
+    'welder': ['welder', 'welders', 'welding'],
+    'handyman': ['handyman', 'handymen'],
   };
+
+  String get _providerSectionTitle =>
+      _searchController.text.isEmpty ? 'High Rated Services & Businesses' : 'Search Results';
 
   // Active search filtering routine running locally
   void _runSearchFilter(String enteredKeyword) {
@@ -204,12 +183,24 @@ class _SearchScreenState extends State<SearchScreen> {
       categoryResults = _allCategories;
     } else {
       final query = enteredKeyword.toLowerCase();
-      providerResults = _allProviders.where((item) =>
-      item['name'].toString().toLowerCase().contains(query) ||
-          item['category'].toString().toLowerCase().contains(query) ||
-          (item['location'] ?? '').toString().toLowerCase().contains(query) ||
-          (item['town'] ?? '').toString().toLowerCase().contains(query)
-      ).toList();
+
+      providerResults = _allProviders.where((item) {
+        final name = item['name'].toString().toLowerCase();
+        final category = item['category'].toString().toLowerCase();
+        final town = (item['town'] ?? '').toString().toLowerCase();
+
+        if (name.contains(query) || category.contains(query) || town.contains(query)) {
+          return true;
+        }
+
+        final aliases = categorySearchAliases[category];
+        if (aliases != null && aliases.any((alias) => alias.contains(query))) {
+          return true;
+        }
+        return false;
+      }).toList();
+
+      providerResults.sort((a, b) => _score(b).compareTo(_score(a)));
 
       categoryResults = _allCategories.where((item) =>
           item['name'].toString().toLowerCase().contains(query)).toList();
@@ -317,9 +308,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
               const SizedBox(height: 24),
 
-              const Text(
-                'High Rated Services & Businesses',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
+              Text(
+                _providerSectionTitle,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary, letterSpacing: 0.3),
               ),
               const SizedBox(height: 12),
 
@@ -451,7 +442,11 @@ class _SearchScreenState extends State<SearchScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FilteredServicesScreen(categoryName: cat['name'] ?? ''),
+                            builder: (_) => FilteredServicesScreen(
+                              categoryName: cat['name'] ?? '',
+                              userDistrict: _userDistrict,
+                              userTown: _userTown,
+                            ),
                           ),
                         );
                       },
@@ -544,19 +539,108 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
-class FilteredServicesScreen extends StatelessWidget {
+class FilteredServicesScreen extends StatefulWidget {
   final String categoryName;
-  const FilteredServicesScreen({super.key, required this.categoryName});
+  final String userDistrict;
+  final String userTown;
+
+  const FilteredServicesScreen({
+    super.key,
+    required this.categoryName,
+    required this.userDistrict,
+    required this.userTown,
+  });
+
+  @override
+  State<FilteredServicesScreen> createState() => _FilteredServicesScreenState();
+}
+
+class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
+  static const Color screenBackground = Color(0xFFE0F2F1);
+
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _providers = [];
+
+  double _score(Map<String, dynamic> provider) {
+    double score = 0;
+    final String providerDistrict = (provider['district'] ?? '').toString().toLowerCase();
+    final String userDistrictLower = widget.userDistrict.toLowerCase();
+
+    if (providerDistrict == userDistrictLower) {
+      score += 30;
+    } else if (subRegionOf(providerDistrict) != null &&
+        subRegionOf(providerDistrict) == subRegionOf(widget.userDistrict)) {
+      score += 15;
+    }
+
+    if ((provider['town'] ?? '').toString().toLowerCase() == widget.userTown.toLowerCase()) {
+      score += 20;
+    }
+    score += (provider['rating'] as double? ?? 0.0) * 10;
+    score += (provider['jobs'] as int? ?? 0) * 0.5;
+    score += (provider['responseRate'] as double? ?? 0.0) * 5;
+    return score;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviders();
+  }
+
+  Future<void> _loadProviders() async {
+    try {
+      final categoryLower = widget.categoryName.toLowerCase();
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('providers')
+          .where('businessCategoryLower', isEqualTo: categoryLower)
+          .where('available', isEqualTo: true)
+          .get();
+
+
+      final providers = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['businessName'] ?? '',
+          'category': data['businessCategory'] ?? '',
+          'district': data['district'] ?? '',
+          'town': data['town'] ?? '',
+          'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+          'jobs': data['completedJobs'] ?? 0,
+          'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
+          'icon': Icons.person,
+        };
+      }).toList();
+
+      providers.sort((a, b) => _score(b).compareTo(_score(a)));
+
+      if (mounted) {
+        setState(() {
+          _providers = providers;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Could not load providers. Please try again.';
+          _loading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const Color brandPrimary = Color(0xFF005F73);
-    const Color screenBackground = Color(0xFFE0F2F1);
-
     return Scaffold(
       backgroundColor: screenBackground,
       appBar: AppBar(
-        title: Text(categoryName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(widget.categoryName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
       ),
@@ -566,16 +650,50 @@ class FilteredServicesScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Available $categoryName',
+              'Available ${widget.categoryName}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary),
             ),
             const SizedBox(height: 16),
-            const Expanded(
-              child: Center(
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: brandPrimary))
+                  : _error != null
+                  ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)))
+                  : _providers.isEmpty
+                  ? const Center(
                 child: Text(
                   'No providers available in this category right now.',
                   style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
+              )
+                  : ListView.builder(
+                itemCount: _providers.length,
+                itemBuilder: (context, index) {
+                  final provider = _providers[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(provider['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('${provider['town'] ?? ''}, ${provider['district'] ?? ''}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          Text('${provider['rating'] ?? 0}'),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProviderDetailScreen(provider: provider),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ],
