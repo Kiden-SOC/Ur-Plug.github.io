@@ -29,6 +29,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   final _dialogFormKey = GlobalKey<FormState>();
   DateTime? _bookingDate;
   TimeOfDay? _bookingTime;
+  DateTime? _bookingDeadline;
   final TextEditingController _dialogDistrictController = TextEditingController();
   final TextEditingController _dialogTownController = TextEditingController();
   final TextEditingController _dialogDetailsController = TextEditingController();
@@ -85,6 +86,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     required String town,
     required String date,
     required String time,
+    required String deadline,
     required String details,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -94,10 +96,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
     final currentUser = await AuthService().getCurrentUser();
     final customerName = currentUser?.fullName ?? 'Customer';
+    final customerPhone = currentUser?.contact ?? '';
 
     await FirebaseFirestore.instance.collection('bookings').add({
       'customerUid': user.uid,
       'customerName': customerName,
+      'customerPhone': customerPhone,
       'providerUid': widget.provider['id'] ?? '',
       'providerName': widget.provider['name'] ?? '',
       'category': widget.provider['category'] ?? '',
@@ -107,6 +111,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
       'town': town,
       'date': date,
       'time': time,
+      'deadline': deadline,
       'details': details,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -177,7 +182,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       TextFormField(
                         controller: _dialogTownController,
                         decoration: InputDecoration(
-                          labelText: 'Town / Specific Area',
+                          labelText: 'Landmark / Specific Area',
                           prefixIcon: const Icon(Icons.location_on, size: 20, color: brandPrimary),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
@@ -225,6 +230,31 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       ),
                       const Divider(height: 24),
 
+                      const Text('DEADLINE FOR THE SERVICE', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _bookingDeadline ?? DateTime.now().add(const Duration(days: 1)),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 180)),
+                            );
+                            if (picked != null) setDialogState(() => _bookingDeadline = picked);
+                          },
+                          icon: const Icon(Icons.event_busy, size: 16, color: brandPrimary),
+                          label: Text(
+                            _bookingDeadline == null
+                                ? 'Select the deadline date'
+                                : 'Must be done by ${DateFormat('yyyy-MM-dd').format(_bookingDeadline!)}',
+                            style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 24),
+
                       const Text('WHAT NEEDS TO BE DONE?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -255,10 +285,17 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                         );
                         return;
                       }
+                      if (_bookingDeadline == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select a deadline for the service!'), backgroundColor: Colors.orange),
+                        );
+                        return;
+                      }
                       final String targetDistrict = _dialogDistrictController.text.trim();
                       final String targetTown = _dialogTownController.text.trim();
                       final String finalDate = DateFormat('yyyy-MM-dd').format(_bookingDate!);
                       final String finalTime = _bookingTime!.format(context);
+                      final String finalDeadline = DateFormat('yyyy-MM-dd').format(_bookingDeadline!);
                       final String issueDetails = _dialogDetailsController.text.trim();
 
                       Navigator.of(dialogContext).pop();
@@ -268,6 +305,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                         town: targetTown,
                         date: finalDate,
                         time: finalTime,
+                        deadline: finalDeadline,
                         details: issueDetails,
                       );
                     }
