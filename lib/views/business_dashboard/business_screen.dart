@@ -47,15 +47,15 @@ class _BusinessScreenState extends State<BusinessScreen> {
             Expanded(
               child: controller.loading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.brandPrimary))
+                  child: CircularProgressIndicator(
+                      color: AppColors.brandPrimary))
                   : IndexedStack(
-                      index: _tabIndex,
-                      children: const [
-                        _OverviewTab(),
-                        SettingsScreen(),
-                      ],
-                    ),
+                index: _tabIndex,
+                children: const [
+                  _OverviewTab(),
+                  SettingsScreen(),
+                ],
+              ),
             ),
           ],
         ),
@@ -73,7 +73,7 @@ class _BusinessScreenState extends State<BusinessScreen> {
           NavigationDestination(
               icon: Icon(Icons.more_horiz),
               selectedIcon:
-                  Icon(Icons.more_horiz, color: AppColors.brandPrimary),
+              Icon(Icons.more_horiz, color: AppColors.brandPrimary),
               label: 'Settings'),
         ],
       ),
@@ -119,17 +119,17 @@ class _BrandHeader extends StatelessWidget {
             child: ClipOval(
               child: profile.profilePhotoPath.isEmpty
                   ? const CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.storefront,
-                          size: 26, color: AppColors.brandPrimary),
-                    )
+                radius: 26,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.storefront,
+                    size: 26, color: AppColors.brandPrimary),
+              )
                   : UrPlugPhoto(
-                      path: profile.profilePhotoPath,
-                      width: 52,
-                      height: 52,
-                      placeholderIcon: Icons.storefront,
-                    ),
+                path: profile.profilePhotoPath,
+                width: 52,
+                height: 52,
+                placeholderIcon: Icons.storefront,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -227,9 +227,9 @@ class _OverviewTab extends StatelessWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 1.02,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.35,
             children: [
               _ActionTile(
                 icon: Icons.pending_actions,
@@ -319,21 +319,21 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: .04),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -341,18 +341,18 @@ class _ActionTile extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: gradient,
                     ),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(icon, color: Colors.white, size: 24),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 if (badgeCount != null && badgeCount! > 0)
                   Positioned(
@@ -360,7 +360,7 @@ class _ActionTile extends StatelessWidget {
                     right: -6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                          horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
                         color: AppColors.accentRedOrange,
                         borderRadius: BorderRadius.circular(10),
@@ -369,7 +369,7 @@ class _ActionTile extends StatelessWidget {
                       child: Text(
                         '$badgeCount',
                         style: const TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -382,7 +382,7 @@ class _ActionTile extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                fontSize: 13.5,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: AppColors.brandPrimary,
                 height: 1.2,
@@ -394,6 +394,3 @@ class _ActionTile extends StatelessWidget {
     );
   }
 }
-
-
-
