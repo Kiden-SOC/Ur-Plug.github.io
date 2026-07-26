@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/uganda_districts.dart';
 
 class MatchingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -96,7 +97,7 @@ class MatchingService {
         QuerySnapshot districtSnapshot = await _firestore
             .collection('providers')
             .where('businessCategoryLower', isEqualTo: categoryLower)
-            .where('district', isEqualTo: district)
+            .where('districtLower', isEqualTo: districtLower)
             .where('available', isEqualTo: true)
             .get();
 
@@ -138,8 +139,6 @@ class MatchingService {
         }
       }
     } on FirebaseException catch (e) {
-      // surfaces composite-index errors and permission errors instead of
-      // hanging on a loading state forever
       return {
         "success": false,
         "message": "Search failed: ${e.message}",
@@ -172,9 +171,14 @@ class MatchingService {
       String userTown,
       ) {
     double score = 0;
+    final String providerDistrict = (provider['district'] ?? '').toString().toLowerCase();
+    final String userDistrictLower = userDistrict.toLowerCase();
 
-    if ((provider['district'] ?? '').toString().toLowerCase() == userDistrict.toLowerCase()) {
+    if (providerDistrict == userDistrictLower) {
       score += 30;
+    } else if (subRegionOf(providerDistrict) != null &&
+        subRegionOf(providerDistrict) == subRegionOf(userDistrict)) {
+      score += 15;
     }
 
     if ((provider['town'] ?? '').toString().toLowerCase() == userTown.toLowerCase()) {

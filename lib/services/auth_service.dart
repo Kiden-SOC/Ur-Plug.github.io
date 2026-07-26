@@ -47,6 +47,7 @@ class AuthService {
           'businessCategory': businessCategory ?? '',
           'businessCategoryLower': (businessCategory ?? '').toLowerCase(),
           'businessEmailAddress' : email ?? '',
+          'phone': contact,
           'district': district,
           'district Lower': district.toLowerCase(),   // typo guard below
           'town': town,
