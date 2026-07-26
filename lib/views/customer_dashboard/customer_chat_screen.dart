@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../../state/customer_profile_controller.dart';
 
 class ChatScreen extends StatefulWidget {
   final String providerUid;
@@ -20,6 +22,12 @@ class _ChatScreenState extends State<ChatScreen> {
   late final String _chatId;
   late final String _myUid;
 
+  // The name shown in the AppBar and written to the chat doc. Starts as
+  // whatever the caller passed in, then gets overwritten with the real
+  // businessName from Firestore once it loads — this way a stale/fallback
+  // name passed in from a list item can never get "burned in" permanently.
+  late String _providerDisplayName;
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +35,24 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatId = _myUid.compareTo(widget.providerUid) < 0
         ? '${_myUid}_${widget.providerUid}'
         : '${widget.providerUid}_$_myUid';
+    _providerDisplayName = widget.providerName;
+    _loadProviderName();
+  }
+
+  Future<void> _loadProviderName() async {
+    if (widget.providerUid.isEmpty) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('providers')
+          .doc(widget.providerUid)
+          .get();
+      final businessName = (doc.data()?['businessName'] ?? '').toString();
+      if (mounted && businessName.isNotEmpty) {
+        setState(() => _providerDisplayName = businessName);
+      }
+    } catch (_) {
+      // Keep whatever name we were passed in if the lookup fails.
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -34,9 +60,18 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _messageController.clear();
 
+    // Grab the logged-in customer's display name so the provider-side
+    // chat list (and this screen's own chat list) can show a real name
+    // instead of a raw UID.
+    final customerName = context.read<CustomerProfileController>().profile.name;
+
     final chatRef = FirebaseFirestore.instance.collection('chats').doc(_chatId);
     await chatRef.set({
       'participants': [_myUid, widget.providerUid],
+      'providerUid': widget.providerUid,
+      'providerName': _providerDisplayName,
+      'customerUid': _myUid,
+      'customerName': customerName.isNotEmpty ? customerName : 'Customer',
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -59,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: screenBackground,
       appBar: AppBar(
-        title: Text(widget.providerName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(_providerDisplayName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: brandPrimary,
         foregroundColor: Colors.white,
         elevation: 0,

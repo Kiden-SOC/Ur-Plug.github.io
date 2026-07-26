@@ -127,7 +127,6 @@ class _SearchScreenState extends State<SearchScreen> {
     {'name': 'Cleaner', 'icon': Icons.cleaning_services},
   ];
   final List<Map<String, dynamic>> _bookingHistory = [];
-  final List<Map<String, dynamic>> _chatThreads = [];
 
   // Dynamic filter lists initialized on startup
   List<Map<String, dynamic>> _filteredProviders = [];
@@ -229,7 +228,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildBodyContent() {
     switch (_currentIndex) {
       case 1:
-        return ActiveChatsDashboard(chatThreads: _chatThreads);
+        return const ActiveChatsDashboard();
       case 2:
         return const AccountDetailsScreen();
       case 3:
@@ -1146,87 +1145,95 @@ class BookingHistoryScreen extends StatelessWidget {
   }
 }
 
+/// Shows every chat the logged-in customer is part of, sourced live from
+/// Firestore's `chats` collection (filtered by participants array).
 class ActiveChatsDashboard extends StatelessWidget {
-  final List<Map<String, dynamic>> chatThreads;
-  const ActiveChatsDashboard({super.key, required this.chatThreads});
+  const ActiveChatsDashboard({super.key});
+
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
 
   @override
   Widget build(BuildContext context) {
-    const Color brandPrimary = Color(0xFF005F73);
-    const Color brandSecondary = Color(0xFF0A9396);
-    return chatThreads.isEmpty
-        ? const Center(
-      child: Text(
-        'No active conversations yet.',
-        style: TextStyle(color: Colors.grey, fontSize: 14),
-      ),
-    )
-        : ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: chatThreads.length,
-      itemBuilder: (context, index) {
-        final thread = chatThreads[index];
-        final bool isUnread = thread['isUnread'] as bool? ?? false;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: brandPrimary.withValues(alpha: 0.1),
-              child: Icon(thread['icon'] is IconData ? thread['icon'] : Icons.chat, color: brandPrimary),
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  thread['name'] ?? 'Provider',
-                  style: TextStyle(
-                    fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
-                    color: brandPrimary,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  thread['time'] ?? '',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isUnread ? brandSecondary : Colors.grey,
-                    fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                thread['message'] ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isUnread ? Colors.black87 : Colors.grey,
-                  fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
-                ),
+    final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('chats')
+          .where('participants', arrayContains: myUid)
+          .orderBy('lastMessageTime', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: brandPrimary));
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return const Center(
+            child: Text('No active conversations yet.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
+            final participants = List<String>.from(data['participants'] ?? []);
+            final otherUid = participants.firstWhere((id) => id != myUid, orElse: () => '');
+
+            // providerUid/providerName are written by ChatScreen when a
+            // customer starts a conversation, so the business name shows
+            // up here instead of a raw UID.
+            final String businessName = (data['providerName'] ?? '').toString();
+            final String displayName = businessName.isNotEmpty ? businessName : 'Provider';
+            final String lastMessage = data['lastMessage'] ?? '';
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
               ),
-            ),
-            trailing: isUnread
-                ? const CircleAvatar(radius: 5, backgroundColor: brandSecondary)
-                : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    providerUid: thread['id'] ?? '',
-                    providerName: thread['name'] ?? '',
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                  child: const Icon(Icons.storefront, color: brandPrimary),
+                ),
+                title: Text(
+                  displayName,
+                  style: const TextStyle(fontWeight: FontWeight.w600, color: brandPrimary, fontSize: 14),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),
-              );
-            },
-          ),
+                trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        providerUid: otherUid,
+                        providerName: displayName,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );
