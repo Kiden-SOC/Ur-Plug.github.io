@@ -9,6 +9,9 @@ import 'package:ur_plug/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
+  // The bio data is hidden inside this provider Map.
+  // We will display it in the build method using: widget.provider['bio'] 
+  // (or 'description'/'about' depending on your Firestore key)
   final Map<String, dynamic> provider;
   const ProviderDetailScreen({super.key, required this.provider});
 
@@ -27,9 +30,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
   // Added variables for the lecturer's pop-up requirement
   final _dialogFormKey = GlobalKey<FormState>();
-  DateTime? _bookingDate;
+  // Split into Start Date and End Date to cover the full booking range
+  DateTime? _bookingStartDate;
+  DateTime? _bookingEndDate;
   TimeOfDay? _bookingTime;
-  DateTime? _bookingDeadline;
   final TextEditingController _dialogDistrictController = TextEditingController();
   final TextEditingController _dialogTownController = TextEditingController();
   final TextEditingController _dialogDetailsController = TextEditingController();
@@ -80,13 +84,13 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
-  // Updated to receive location, timing, and job parameters
+  // Updated to receive location, timing (start/end date range), and job parameters
   Future<void> _requestProvider({
     required String district,
     required String town,
-    required String date,
+    required String startDate,
+    required String endDate,
     required String time,
-    required String deadline,
     required String details,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -96,12 +100,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
     final currentUser = await AuthService().getCurrentUser();
     final customerName = currentUser?.fullName ?? 'Customer';
-    final customerPhone = currentUser?.contact ?? '';
 
     await FirebaseFirestore.instance.collection('bookings').add({
       'customerUid': user.uid,
       'customerName': customerName,
-      'customerPhone': customerPhone,
       'providerUid': widget.provider['id'] ?? '',
       'providerName': widget.provider['name'] ?? '',
       'category': widget.provider['category'] ?? '',
@@ -109,9 +111,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
       'reviewed': false,
       'district': district,
       'town': town,
-      'date': date,
+      'startDate': startDate,
+      'endDate': endDate,
       'time': time,
-      'deadline': deadline,
       'details': details,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -127,7 +129,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
-  // The modal builder that requests Where, When, and What info
+  // The modal builder that requests Where, When (start/end date + time), and What info
   void _showInstantBookingDialog() {
     final String providerName = widget.provider['name'] ?? 'Provider';
     final String providerService = widget.provider['category'] ?? 'General Service';
@@ -182,16 +184,16 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       TextFormField(
                         controller: _dialogTownController,
                         decoration: InputDecoration(
-                          labelText: 'Landmark / Specific Area',
+                          labelText: 'Town / Specific Area',
                           prefixIcon: const Icon(Icons.location_on, size: 20, color: brandPrimary),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         validator: (value) => value!.isEmpty ? 'Required' : null,
                       ),
                       const Divider(height: 24),
-
                       const Text('WHEN DO YOU NEED IT?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
                       const SizedBox(height: 8),
+                      // Start Date + End Date row
                       Row(
                         children: [
                           Expanded(
@@ -199,16 +201,24 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                               onPressed: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: DateTime.now(),
+                                  initialDate: _bookingStartDate ?? DateTime.now(),
                                   firstDate: DateTime.now(),
                                   lastDate: DateTime.now().add(const Duration(days: 90)),
                                 );
-                                if (picked != null) setDialogState(() => _bookingDate = picked);
+                                if (picked != null) {
+                                  setDialogState(() {
+                                    _bookingStartDate = picked;
+                                    // Clear an end date that's now before the new start date
+                                    if (_bookingEndDate != null && _bookingEndDate!.isBefore(_bookingStartDate!)) {
+                                      _bookingEndDate = null;
+                                    }
+                                  });
+                                }
                               },
                               icon: const Icon(Icons.calendar_month, size: 16, color: brandPrimary),
                               label: Text(
-                                _bookingDate == null ? 'Date' : DateFormat('yyyy-MM-dd').format(_bookingDate!), 
-                                style: const TextStyle(fontSize: 12, color: Colors.black87)
+                                _bookingStartDate == null ? 'Start Date' : DateFormat('yyyy-MM-dd').format(_bookingStartDate!),
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ),
                           ),
@@ -216,41 +226,34 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () async {
-                                final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                                if (picked != null) setDialogState(() => _bookingTime = picked);
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _bookingEndDate ?? _bookingStartDate ?? DateTime.now(),
+                                  firstDate: _bookingStartDate ?? DateTime.now(),
+                                  lastDate: DateTime.now().add(const Duration(days: 90)),
+                                );
+                                if (picked != null) setDialogState(() => _bookingEndDate = picked);
                               },
-                              icon: const Icon(Icons.access_time, size: 16, color: brandPrimary),
+                              icon: const Icon(Icons.calendar_month, size: 16, color: brandPrimary),
                               label: Text(
-                                _bookingTime == null ? 'Time' : _bookingTime!.format(context), 
-                                style: const TextStyle(fontSize: 12, color: Colors.black87)
+                                _bookingEndDate == null ? 'End Date' : DateFormat('yyyy-MM-dd').format(_bookingEndDate!),
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
-
-                      const Text('DEADLINE FOR THE SERVICE', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
                       const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _bookingDeadline ?? DateTime.now().add(const Duration(days: 1)),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 180)),
-                            );
-                            if (picked != null) setDialogState(() => _bookingDeadline = picked);
-                          },
-                          icon: const Icon(Icons.event_busy, size: 16, color: brandPrimary),
-                          label: Text(
-                            _bookingDeadline == null
-                                ? 'Select the deadline date'
-                                : 'Must be done by ${DateFormat('yyyy-MM-dd').format(_bookingDeadline!)}',
-                            style: const TextStyle(fontSize: 12, color: Colors.black87),
-                          ),
+                      // Time picker on its own row below the date range
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                          if (picked != null) setDialogState(() => _bookingTime = picked);
+                        },
+                        icon: const Icon(Icons.access_time, size: 16, color: brandPrimary),
+                        label: Text(
+                          _bookingTime == null ? 'Time' : _bookingTime!.format(context),
+                          style: const TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                       ),
                       const Divider(height: 24),
@@ -279,23 +282,17 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   style: ElevatedButton.styleFrom(backgroundColor: brandPrimary, foregroundColor: Colors.white),
                   onPressed: () {
                     if (_dialogFormKey.currentState!.validate()) {
-                      if (_bookingDate == null || _bookingTime == null) {
+                      if (_bookingStartDate == null || _bookingEndDate == null || _bookingTime == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select both Date and Time!'), backgroundColor: Colors.orange),
-                        );
-                        return;
-                      }
-                      if (_bookingDeadline == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select a deadline for the service!'), backgroundColor: Colors.orange),
+                          const SnackBar(content: Text('Please select Start Date, End Date, and Time!'), backgroundColor: Colors.orange),
                         );
                         return;
                       }
                       final String targetDistrict = _dialogDistrictController.text.trim();
                       final String targetTown = _dialogTownController.text.trim();
-                      final String finalDate = DateFormat('yyyy-MM-dd').format(_bookingDate!);
+                      final String finalStartDate = DateFormat('yyyy-MM-dd').format(_bookingStartDate!);
+                      final String finalEndDate = DateFormat('yyyy-MM-dd').format(_bookingEndDate!);
                       final String finalTime = _bookingTime!.format(context);
-                      final String finalDeadline = DateFormat('yyyy-MM-dd').format(_bookingDeadline!);
                       final String issueDetails = _dialogDetailsController.text.trim();
 
                       Navigator.of(dialogContext).pop();
@@ -303,9 +300,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       _requestProvider(
                         district: targetDistrict,
                         town: targetTown,
-                        date: finalDate,
+                        startDate: finalStartDate,
+                        endDate: finalEndDate,
                         time: finalTime,
-                        deadline: finalDeadline,
                         details: issueDetails,
                       );
                     }
@@ -323,8 +320,8 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   void _showReviewDialog(BuildContext context) {
     final commentController = TextEditingController();
     double starRating = 5;
-    
-    showDialog(
+
+  showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
@@ -405,8 +402,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final String tradeTitle = widget.provider['category'] ?? '';
     final String district = widget.provider['district'] ?? '';
     final String town = widget.provider['town'] ?? '';
-    final String rating = (widget.provider['rating'] ?? 0.0).toString();
-    final String completedJobs = (widget.provider['jobs'] ?? 0).toString();
+    final String rating = widget.provider['rating'] ?? '0.0';
+    final String completedJobs = widget.provider['jobs'] ?? '0';
+    
+    // RETRIEVES THE BIO FIELD FROM FIRESTORE
+    // Note: If your Firestore field is named 'description' or 'about', change 'bio' below to match it.
+    final String businessBio = widget.provider['bio'] ?? 'No bio provided by this business.';
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -453,6 +454,34 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
             ),
             const SizedBox(height: 16),
 
+            // BRAND NEW CONTAINER BLOCK THAT DISPLAYS THE BIO
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: brandSecondary, size: 20),
+                      SizedBox(width: 8),
+                      Text('About Business', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    businessBio, 
+                    style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             if (district.isNotEmpty || town.isNotEmpty)
               Container(
                 width: double.infinity,
@@ -474,7 +503,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 ),
               ),
             const SizedBox(height: 24),
-
             Row(
               children: [
                 Expanded(
@@ -503,7 +531,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                                Expanded(
+                Expanded(
                   child: SizedBox(
                     height: 52,
                     child: ElevatedButton.icon(
@@ -561,6 +589,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                           if (await canLaunchUrl(launchUri)) {
                                             await launchUrl(launchUri);
                                           } else {
+                                            if (!context.mounted) return;
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Could not launch the phone dialer.')),
                                             );
@@ -592,7 +621,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
+                        SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => _showReviewDialog(context),
@@ -708,3 +737,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 }
+
+
+  
+
+
+
+
+
+
