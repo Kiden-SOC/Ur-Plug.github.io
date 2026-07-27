@@ -47,6 +47,14 @@ class JobRequestCard extends StatelessWidget {
     return job.time;
   }
 
+  String get _startText {
+    if (job.startDate.isEmpty) return '';
+    if (job.time.isNotEmpty) return '${job.startDate} • ${job.time}';
+    return job.startDate;
+  }
+
+  String get _endText => job.endDate;
+
   Widget _detailRow(IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -218,12 +226,14 @@ class JobRequestCard extends StatelessWidget {
                     fontSize: 13.5, color: AppColors.textDark, height: 1.4)),
           ],
           const SizedBox(height: 10),
-          if (_dateTimeText.isNotEmpty)
+          if (_startText.isNotEmpty)
+            _detailRow(Icons.event_available, 'Start: $_startText')
+          else if (_dateTimeText.isNotEmpty)
             _detailRow(Icons.schedule, _dateTimeText),
+          if (_endText.isNotEmpty)
+            _detailRow(Icons.event_busy, 'End: $_endText'),
           if (_locationText.isNotEmpty)
             _detailRow(Icons.near_me, _locationText),
-          if (job.deadline.isNotEmpty)
-            _detailRow(Icons.event_busy, 'Deadline: ${job.deadline}'),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
