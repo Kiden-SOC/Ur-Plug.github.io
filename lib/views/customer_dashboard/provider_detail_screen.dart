@@ -400,14 +400,21 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final String providerId = widget.provider['id'] ?? '';
     final String businessName = widget.provider['name'] ?? 'Unnamed Business';
     final String tradeTitle = widget.provider['category'] ?? '';
-    final String district = widget.provider['district'] ?? '';
-    final String town = widget.provider['town'] ?? '';
-    final String rating = widget.provider['rating'] ?? '0.0';
-    final String completedJobs = widget.provider['jobs'] ?? '0';
-    
+    final String district = (widget.provider['district'] ?? '').toString();
+    final String town = (widget.provider['town'] ?? '').toString();
+    final String rating = (widget.provider['rating'] ?? '0.0').toString();
+    final String completedJobs = (widget.provider['jobs'] ?? '0').toString();
+
     // RETRIEVES THE BIO FIELD FROM FIRESTORE
     // Note: If your Firestore field is named 'description' or 'about', change 'bio' below to match it.
-    final String businessBio = widget.provider['bio'] ?? 'No bio provided by this business.';
+    final String businessBio = (widget.provider['bio'] ?? '').toString().isNotEmpty
+        ? widget.provider['bio'].toString()
+        : 'No service description provided by this business.';
+
+    // Years of experience the provider entered when signing up.
+    final int yearsOfExperience = int.tryParse(
+            (widget.provider['yearsOfExperience'] ?? '0').toString()) ??
+        0;
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -447,6 +454,8 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                     children: [
                       _buildMetricItem(Icons.task_alt, 'Completed Jobs', completedJobs),
                       _buildMetricItem(Icons.star, 'Rating', rating),
+                      _buildMetricItem(Icons.workspace_premium, 'Experience',
+                          yearsOfExperience > 0 ? '$yearsOfExperience yrs' : 'New'),
                     ],
                   )
                 ],
@@ -469,7 +478,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                     children: [
                       Icon(Icons.info_outline, color: brandSecondary, size: 20),
                       SizedBox(width: 8),
-                      Text('About Business', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                      Text('Service Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -480,6 +489,94 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+
+            // SERVICES OFFERED — the service list the provider set up in
+            // their Service Listings screen, streamed live from Firestore
+            // so the consumer can review it before choosing this provider.
+            if (providerId.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.design_services_outlined, color: brandSecondary, size: 20),
+                        SizedBox(width: 8),
+                        Text('Services Offered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('providers')
+                          .doc(providerId)
+                          .collection('services')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2)),
+                          );
+                        }
+                        final allDocs = snapshot.data?.docs ?? [];
+                        final activeDocs = allDocs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['isActive'] ?? true;
+                        }).toList();
+
+                        if (activeDocs.isEmpty) {
+                          return const Text(
+                            'This provider hasn\'t published any service listings yet.',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          );
+                        }
+
+                        return Column(
+                          children: activeDocs.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final title = (data['title'] ?? '').toString();
+                            final description = (data['description'] ?? '').toString();
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: screenBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.check_circle, size: 15, color: brandSecondary),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(title,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
+                                      ),
+                                    ],
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(description,
+                                        style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.35)),
+                                  ],
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
 
             if (district.isNotEmpty || town.isNotEmpty)
