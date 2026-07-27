@@ -85,6 +85,7 @@ class ProviderProfileController extends ChangeNotifier {
   Future<bool> completeOnboarding(ProviderProfile profile) async {
     final finished = profile.copyWith(onboardingComplete: true);
     final ok = await _api.saveProviderProfile(_email, finished);
+    await _syncProfileToFirestore(finished);
     if (ok) {
       _profile = finished;
       notifyListeners();
@@ -94,11 +95,28 @@ class ProviderProfileController extends ChangeNotifier {
 
   Future<bool> updateProfile(ProviderProfile profile) async {
     final ok = await _api.saveProviderProfile(_email, profile);
+    await _syncProfileToFirestore(profile);
     if (ok) {
       _profile = profile.copyWith(onboardingComplete: true);
       notifyListeners();
     }
     return ok;
+  }
+
+  /// Writes the fields customers see on the provider profile (experience &
+  /// service description) to the provider's Firestore document so they
+  /// persist and are visible to consumers browsing providers.
+  Future<void> _syncProfileToFirestore(ProviderProfile profile) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('providers').doc(uid).set({
+        'bio': profile.bio,
+        'yearsOfExperience': profile.yearsOfExperience,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Failed to sync provider profile to Firestore: $e');
+    }
   }
 
   void toggleAvailability() {
@@ -197,8 +215,26 @@ class ProviderProfileController extends ChangeNotifier {
             district: data['district'] ?? '',
             town: data['town'] ?? '',
             isAvailable: data['available'] ?? true,
+            bio: data['bio'] ?? '',
+            yearsOfExperience: data['yearsOfExperience'] ?? 0,
           );
         }
+
+        final servicesSnapshot = await FirebaseFirestore.instance
+            .collection('providers')
+            .doc(uid)
+            .collection('services')
+            .get();
+
+        _services = servicesSnapshot.docs.map((doc) {
+          final s = doc.data();
+          return ServiceListing(
+            id: doc.id,
+            title: s['title'] ?? '',
+            description: s['description'] ?? '',
+            isActive: s['isActive'] ?? true,
+          );
+        }).toList();
 
         final bookingsSnapshot = await FirebaseFirestore.instance
             .collection('bookings')
@@ -219,6 +255,8 @@ class ProviderProfileController extends ChangeNotifier {
             landmark: b['town'] ?? '',
             date: b['date'] ?? '',
             time: b['time'] ?? '',
+            startDate: b['startDate'] ?? '',
+            endDate: b['endDate'] ?? '',
             deadline: b['deadline'] ?? '',
             requestedTime: _formatTimestamp(b['createdAt']),
             status: _mapStatus(b['status']),
@@ -296,33 +334,104 @@ class ProviderProfileController extends ChangeNotifier {
   // SERVICE LISTINGS
   // ------------------------------------------------------------
 
-  void addService(String title, String description) {
+  void addService(String title, String description) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final servicesRef = uid != null
+        ? FirebaseFirestore.instance
+            .collection('providers')
+            .doc(uid)
+            .collection('services')
+        : null;
+    final id = servicesRef?.doc().id ??
+        'svc-${DateTime.now().millisecondsSinceEpoch}';
+
     _services.add(ServiceListing(
-      id: 'svc-${DateTime.now().millisecondsSinceEpoch}',
+      id: id,
       title: title,
       description: description,
     ));
     notifyListeners();
+
+    if (servicesRef != null) {
+      try {
+        await servicesRef.doc(id).set({
+          'title': title,
+          'description': description,
+          'isActive': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('Failed to save service listing: $e');
+      }
+    }
   }
 
-  void updateService(String id, {String? title, String? description}) {
+  void updateService(String id, {String? title, String? description}) async {
     _services = _services
         .map((s) =>
     s.id == id ? s.copyWith(title: title, description: description) : s)
         .toList();
     notifyListeners();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final updates = <String, dynamic>{};
+    if (title != null) updates['title'] = title;
+    if (description != null) updates['description'] = description;
+    if (updates.isEmpty) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('providers')
+          .doc(uid)
+          .collection('services')
+          .doc(id)
+          .update(updates);
+    } catch (e) {
+      debugPrint('Failed to update service listing: $e');
+    }
   }
 
-  void toggleServiceActive(String id) {
-    _services = _services
-        .map((s) => s.id == id ? s.copyWith(isActive: !s.isActive) : s)
-        .toList();
+  void toggleServiceActive(String id) async {
+    bool? newActive;
+    _services = _services.map((s) {
+      if (s.id == id) {
+        newActive = !s.isActive;
+        return s.copyWith(isActive: newActive);
+      }
+      return s;
+    }).toList();
     notifyListeners();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || newActive == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('providers')
+          .doc(uid)
+          .collection('services')
+          .doc(id)
+          .update({'isActive': newActive});
+    } catch (e) {
+      debugPrint('Failed to update service listing status: $e');
+    }
   }
 
-  void removeService(String id) {
+  void removeService(String id) async {
     _services.removeWhere((s) => s.id == id);
     notifyListeners();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('providers')
+          .doc(uid)
+          .collection('services')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      debugPrint('Failed to delete service listing: $e');
+    }
   }
 
   void markThreadRead(String threadId) {
