@@ -9,6 +9,9 @@ import 'package:ur_plug/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
+  // The bio data is hidden inside this provider Map.
+  // We will display it in the build method using: widget.provider['bio'] 
+  // (or 'description'/'about' depending on your Firestore key)
   final Map<String, dynamic> provider;
   const ProviderDetailScreen({super.key, required this.provider});
 
@@ -28,9 +31,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
   // Added variables for the lecturer's pop-up requirement
   final _dialogFormKey = GlobalKey<FormState>();
-  DateTime? _bookingDate;
+  // Split into Start Date and End Date to cover the full booking range
+  DateTime? _bookingStartDate;
+  DateTime? _bookingEndDate;
   TimeOfDay? _bookingTime;
-  DateTime? _bookingDeadline;
   final TextEditingController _dialogDistrictController = TextEditingController();
   final TextEditingController _dialogTownController = TextEditingController();
   final TextEditingController _dialogDetailsController = TextEditingController();
@@ -81,13 +85,13 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
-  // Updated to receive location, timing, and job parameters
+  // Updated to receive location, timing (start/end date range), and job parameters
   Future<void> _requestProvider({
     required String district,
     required String town,
-    required String date,
+    required String startDate,
+    required String endDate,
     required String time,
-    required String deadline,
     required String details,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -97,12 +101,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 
     final currentUser = await AuthService().getCurrentUser();
     final customerName = currentUser?.fullName ?? 'Customer';
-    final customerPhone = currentUser?.contact ?? '';
 
     await FirebaseFirestore.instance.collection('bookings').add({
       'customerUid': user.uid,
       'customerName': customerName,
-      'customerPhone': customerPhone,
       'providerUid': widget.provider['id'] ?? '',
       'providerName': widget.provider['name'] ?? '',
       'category': widget.provider['category'] ?? '',
@@ -110,9 +112,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
       'reviewed': false,
       'district': district,
       'town': town,
-      'date': date,
+      'startDate': startDate,
+      'endDate': endDate,
       'time': time,
-      'deadline': deadline,
       'details': details,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -128,7 +130,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     }
   }
 
-  // The modal builder that requests Where, When, and What info
+  // The modal builder that requests Where, When (start/end date + time), and What info
   void _showInstantBookingDialog() {
     final String providerName = widget.provider['name'] ?? 'Provider';
     final String providerService = widget.provider['category'] ?? 'General Service';
@@ -183,16 +185,16 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       TextFormField(
                         controller: _dialogTownController,
                         decoration: InputDecoration(
-                          labelText: 'Landmark / Specific Area',
+                          labelText: 'Town / Specific Area',
                           prefixIcon: const Icon(Icons.location_on, size: 20, color: brandPrimary),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         validator: (value) => value!.isEmpty ? 'Required' : null,
                       ),
                       const Divider(height: 24),
-
                       const Text('WHEN DO YOU NEED IT?', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
                       const SizedBox(height: 8),
+                      // Start Date + End Date row
                       Row(
                         children: [
                           Expanded(
@@ -200,16 +202,24 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                               onPressed: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: DateTime.now(),
+                                  initialDate: _bookingStartDate ?? DateTime.now(),
                                   firstDate: DateTime.now(),
                                   lastDate: DateTime.now().add(const Duration(days: 90)),
                                 );
-                                if (picked != null) setDialogState(() => _bookingDate = picked);
+                                if (picked != null) {
+                                  setDialogState(() {
+                                    _bookingStartDate = picked;
+                                    // Clear an end date that's now before the new start date
+                                    if (_bookingEndDate != null && _bookingEndDate!.isBefore(_bookingStartDate!)) {
+                                      _bookingEndDate = null;
+                                    }
+                                  });
+                                }
                               },
                               icon: const Icon(Icons.calendar_month, size: 16, color: brandPrimary),
                               label: Text(
-                                  _bookingDate == null ? 'Date' : DateFormat('yyyy-MM-dd').format(_bookingDate!),
-                                  style: const TextStyle(fontSize: 12, color: Colors.black87)
+                                _bookingStartDate == null ? 'Start Date' : DateFormat('yyyy-MM-dd').format(_bookingStartDate!),
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ),
                           ),
@@ -217,41 +227,34 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () async {
-                                final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                                if (picked != null) setDialogState(() => _bookingTime = picked);
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _bookingEndDate ?? _bookingStartDate ?? DateTime.now(),
+                                  firstDate: _bookingStartDate ?? DateTime.now(),
+                                  lastDate: DateTime.now().add(const Duration(days: 90)),
+                                );
+                                if (picked != null) setDialogState(() => _bookingEndDate = picked);
                               },
-                              icon: const Icon(Icons.access_time, size: 16, color: brandPrimary),
+                              icon: const Icon(Icons.calendar_month, size: 16, color: brandPrimary),
                               label: Text(
-                                  _bookingTime == null ? 'Time' : _bookingTime!.format(context),
-                                  style: const TextStyle(fontSize: 12, color: Colors.black87)
+                                _bookingEndDate == null ? 'End Date' : DateFormat('yyyy-MM-dd').format(_bookingEndDate!),
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
-
-                      const Text('DEADLINE FOR THE SERVICE', style: TextStyle(fontWeight: FontWeight.bold, color: brandSecondary, fontSize: 11)),
                       const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _bookingDeadline ?? DateTime.now().add(const Duration(days: 1)),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 180)),
-                            );
-                            if (picked != null) setDialogState(() => _bookingDeadline = picked);
-                          },
-                          icon: const Icon(Icons.event_busy, size: 16, color: brandPrimary),
-                          label: Text(
-                            _bookingDeadline == null
-                                ? 'Select the deadline date'
-                                : 'Must be done by ${DateFormat('yyyy-MM-dd').format(_bookingDeadline!)}',
-                            style: const TextStyle(fontSize: 12, color: Colors.black87),
-                          ),
+                      // Time picker on its own row below the date range
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                          if (picked != null) setDialogState(() => _bookingTime = picked);
+                        },
+                        icon: const Icon(Icons.access_time, size: 16, color: brandPrimary),
+                        label: Text(
+                          _bookingTime == null ? 'Time' : _bookingTime!.format(context),
+                          style: const TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                       ),
                       const Divider(height: 24),
@@ -280,23 +283,17 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   style: ElevatedButton.styleFrom(backgroundColor: brandPrimary, foregroundColor: Colors.white),
                   onPressed: () {
                     if (_dialogFormKey.currentState!.validate()) {
-                      if (_bookingDate == null || _bookingTime == null) {
+                      if (_bookingStartDate == null || _bookingEndDate == null || _bookingTime == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select both Date and Time!'), backgroundColor: Colors.orange),
-                        );
-                        return;
-                      }
-                      if (_bookingDeadline == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select a deadline for the service!'), backgroundColor: Colors.orange),
+                          const SnackBar(content: Text('Please select Start Date, End Date, and Time!'), backgroundColor: Colors.orange),
                         );
                         return;
                       }
                       final String targetDistrict = _dialogDistrictController.text.trim();
                       final String targetTown = _dialogTownController.text.trim();
-                      final String finalDate = DateFormat('yyyy-MM-dd').format(_bookingDate!);
+                      final String finalStartDate = DateFormat('yyyy-MM-dd').format(_bookingStartDate!);
+                      final String finalEndDate = DateFormat('yyyy-MM-dd').format(_bookingEndDate!);
                       final String finalTime = _bookingTime!.format(context);
-                      final String finalDeadline = DateFormat('yyyy-MM-dd').format(_bookingDeadline!);
                       final String issueDetails = _dialogDetailsController.text.trim();
 
                       Navigator.of(dialogContext).pop();
@@ -304,9 +301,9 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       _requestProvider(
                         district: targetDistrict,
                         town: targetTown,
-                        date: finalDate,
+                        startDate: finalStartDate,
+                        endDate: finalEndDate,
                         time: finalTime,
-                        deadline: finalDeadline,
                         details: issueDetails,
                       );
                     }
@@ -364,7 +361,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final commentController = TextEditingController();
     double starRating = 5;
 
-    showDialog(
+  showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
@@ -472,14 +469,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final String providerId = widget.provider['id'] ?? '';
-    final String businessName = widget.provider['name'] ?? 'Unnamed Business';
-    final String tradeTitle = widget.provider['category'] ?? '';
-    final String district = widget.provider['district'] ?? '';
-    final String town = widget.provider['town'] ?? '';
-    final double ratingValueRaw = (widget.provider['rating'] as num?)?.toDouble() ?? 0.0;
-    final int reviewCount = (widget.provider['reviewCount'] as num?)?.toInt() ?? 0;
-    final String rating = '${ratingValueRaw.toStringAsFixed(1)} ($reviewCount)';
-    final String completedJobs = (widget.provider['jobs'] ?? 0).toString();
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -489,7 +478,169 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: providerId.isNotEmpty
+            ? FirebaseFirestore.instance.collection('providers').doc(providerId).snapshots()
+            : null,
+        builder: (context, snapshot) {
+          // Falls back to whatever the list screen already had (id/name/
+          // category at minimum) while the live doc is still loading, then
+          // switches to the live Firestore data — which is what keeps the
+          // photo, bio and services current the moment the provider changes
+          // them, with no need to leave and reopen this screen.
+          final Map<String, dynamic> data =
+              (snapshot.data?.data() as Map<String, dynamic>?) ?? widget.provider;
+
+          final String businessName = _pick(data, ['businessName', 'name'], 'Unnamed Business');
+          final String tradeTitle = _pick(data, ['businessCategory', 'category']);
+          final String district = _pick(data, ['district']);
+          final String town = _pick(data, ['town']);
+          final String rating = (data['rating'] ?? '0.0').toString();
+          final String completedJobs = (data['jobs'] ?? data['completedJobs'] ?? '0').toString();
+          final String profilePhotoUrl = _pick(data, ['profilePhotoUrl']);
+          final List<String> workPhotos = (data['businessPhotoUrls'] as List?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [];
+
+          // RETRIEVES THE BIO FIELD FROM FIRESTORE
+          final String rawBio = _pick(data, ['bio']);
+          final String businessBio =
+              rawBio.isNotEmpty ? rawBio : 'No service description provided by this business.';
+
+          // Years of experience the provider entered when signing up.
+          final int yearsOfExperience = int.tryParse((data['yearsOfExperience'] ?? '0').toString()) ?? 0;
+
+          return _buildBody(
+            context: context,
+            providerId: providerId,
+            businessName: businessName,
+            tradeTitle: tradeTitle,
+            district: district,
+            town: town,
+            rating: rating,
+            completedJobs: completedJobs,
+            profilePhotoUrl: profilePhotoUrl,
+            workPhotos: workPhotos,
+            businessBio: businessBio,
+            yearsOfExperience: yearsOfExperience,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Reads the first non-empty value found across [keys] in [data], so the
+  /// UI works whether the map came from the live Firestore doc (which uses
+  /// names like `businessName`) or the fallback passed in from a list
+  /// screen (which sometimes used shorter aliases like `name`).
+  String _pick(Map<String, dynamic> data, List<String> keys, [String fallback = '']) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value != null && value.toString().isNotEmpty) return value.toString();
+    }
+    return fallback;
+  }
+
+  void _showWorkPhotosSheet(BuildContext context, String providerId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return StreamBuilder<DocumentSnapshot>(
+              // A separate live listener so the gallery keeps updating even
+              // while the sheet is open, in case the provider adds photos
+              // from another device at that exact moment.
+              stream: FirebaseFirestore.instance.collection('providers').doc(providerId).snapshots(),
+              builder: (context, snapshot) {
+                final data = snapshot.data?.data() as Map<String, dynamic>?;
+                final photos = (data?['businessPhotoUrls'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.photo_library_outlined, color: brandPrimary),
+                          const SizedBox(width: 8),
+                          Text('Work photos (${photos.length})',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: brandPrimary)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: photos.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'This provider hasn\'t uploaded any work photos yet.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                              )
+                            : GridView.builder(
+                                controller: scrollController,
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                ),
+                                itemCount: photos.length,
+                                itemBuilder: (context, index) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.network(
+                                      photos[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: screenBackground,
+                                        alignment: Alignment.center,
+                                        child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                      ),
+                                      loadingBuilder: (context, child, progress) => progress == null
+                                          ? child
+                                          : const Center(
+                                              child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBody({
+    required BuildContext context,
+    required String providerId,
+    required String businessName,
+    required String tradeTitle,
+    required String district,
+    required String town,
+    required String rating,
+    required String completedJobs,
+    required String profilePhotoUrl,
+    required List<String> workPhotos,
+    required String businessBio,
+    required int yearsOfExperience,
+  }) {
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,7 +658,25 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                    child: const Icon(Icons.storefront, size: 45, color: brandPrimary),
+                    child: profilePhotoUrl.isEmpty
+                        ? const Icon(Icons.storefront, size: 45, color: brandPrimary)
+                        : ClipOval(
+                            child: Image.network(
+                              profilePhotoUrl,
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.storefront, size: 45, color: brandPrimary),
+                              loadingBuilder: (context, child, progress) => progress == null
+                                  ? child
+                                  : const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+                                    ),
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Text(businessName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary), textAlign: TextAlign.center),
@@ -519,11 +688,150 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                     children: [
                       _buildMetricItem(Icons.task_alt, 'Completed Jobs', completedJobs),
                       _buildMetricItem(Icons.star, 'Rating', rating),
+                      _buildMetricItem(Icons.workspace_premium, 'Experience',
+                          yearsOfExperience > 0 ? '$yearsOfExperience yrs' : 'New'),
                     ],
                   )
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+
+            // BRAND NEW CONTAINER BLOCK THAT DISPLAYS THE BIO
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white, 
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: brandSecondary, size: 20),
+                      SizedBox(width: 8),
+                      Text('Service Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    businessBio, 
+                    style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // SERVICES OFFERED — the service list the provider set up in
+            // their Service Listings screen, streamed live from Firestore
+            // so the consumer can review it before choosing this provider.
+            if (providerId.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.design_services_outlined, color: brandSecondary, size: 20),
+                        SizedBox(width: 8),
+                        Text('Services Offered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('providers')
+                          .doc(providerId)
+                          .collection('services')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2)),
+                          );
+                        }
+                        final allDocs = snapshot.data?.docs ?? [];
+                        final activeDocs = allDocs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['isActive'] ?? true;
+                        }).toList();
+
+                        if (activeDocs.isEmpty) {
+                          return const Text(
+                            'This provider hasn\'t published any service listings yet.',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          );
+                        }
+
+                        return Column(
+                          children: activeDocs.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final title = (data['title'] ?? '').toString();
+                            final description = (data['description'] ?? '').toString();
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: screenBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.check_circle, size: 15, color: brandSecondary),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(title,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
+                                      ),
+                                    ],
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(description,
+                                        style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.35)),
+                                  ],
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+
+            if (providerId.isNotEmpty)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showWorkPhotosSheet(context, providerId),
+                  icon: const Icon(Icons.photo_library_outlined, size: 18, color: brandPrimary),
+                  label: Text(
+                    workPhotos.isEmpty
+                        ? 'View work photos'
+                        : 'View work photos (${workPhotos.length})',
+                    style: const TextStyle(color: brandPrimary, fontWeight: FontWeight.bold),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: brandPrimary),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
 
             if (district.isNotEmpty || town.isNotEmpty)
@@ -547,7 +855,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 ),
               ),
             const SizedBox(height: 24),
-
             Row(
               children: [
                 Expanded(
@@ -634,6 +941,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                           if (await canLaunchUrl(launchUri)) {
                                             await launchUrl(launchUri);
                                           } else {
+                                            if (!context.mounted) return;
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Could not launch the phone dialer.')),
                                             );
@@ -665,7 +973,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
+                        SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: _checkingReviewEligibility ? null : _onLeaveReviewPressed,
@@ -734,7 +1042,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               ),
           ],
         ),
-      ),
     );
   }
 
@@ -787,4 +1094,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 }
- 
+
+
+  
+
+
+
+
+
+

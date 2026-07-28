@@ -59,6 +59,9 @@ class _SearchScreenState extends State<SearchScreen> {
         'reviewCount': data['reviewCount'] ?? 0,
         'jobs': data['completedJobs'] ?? 0,
         'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
+        'bio': data['bio'] ?? '',
+        'yearsOfExperience': data['yearsOfExperience'] ?? 0,
+        'phone': data['phone'] ?? '',
         'icon': Icons.person,
       };
     }).toList();
@@ -628,6 +631,9 @@ class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
           'reviewCount': data['reviewCount'] ?? 0,
           'jobs': data['completedJobs'] ?? 0,
           'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
+          'bio': data['bio'] ?? '',
+          'yearsOfExperience': data['yearsOfExperience'] ?? 0,
+          'phone': data['phone'] ?? '',
           'icon': Icons.person,
         };
       }).toList();
