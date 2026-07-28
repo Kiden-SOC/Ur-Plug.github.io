@@ -144,17 +144,16 @@ class _SearchScreenState extends State<SearchScreen> {
   // Shown above search results when we had to widen beyond the user's town/district
   String? _searchScopeNotice;
 
-  // Aliases so "plumber" search still matches providers stored as "Plumbing", etc.
   final Map<String, List<String>> categorySearchAliases = {
-    'plumbing': ['plumber', 'plumbers', 'plumbing'],
-    'electrician': ['electrician', 'electricians', 'electrical'],
-    'mechanic': ['mechanic', 'mechanics'],
-    'carpenter': ['carpenter', 'carpenters', 'carpentry'],
-    'interior design': ['interior design', 'interior designer', 'decor'],
-    'cleaner': ['cleaner', 'cleaners', 'cleaning'],
-    'painter': ['painter', 'painters', 'painting'],
-    'welder': ['welder', 'welders', 'welding'],
-    'handyman': ['handyman', 'handymen'],
+    'plumbing': ['plumber', 'plumbers', 'plumbing', 'sink', 'tap', 'pipe', 'drain', 'leak', 'leaking', 'toilet', 'shower', 'flush'],
+    'electrician': ['electrician', 'electricians', 'electrical', 'socket', 'switch', 'wire', 'wiring', 'bulb', 'power', 'generator', 'lights'],
+    'mechanic': ['mechanic', 'mechanics', 'car', 'vehicle', 'engine', 'gearbox', 'battery', 'tyre', 'brake', 'oil'],
+    'carpenter': ['carpenter', 'carpenters', 'carpentry', 'door', 'window', 'chair', 'table', 'cabinet', 'wood'],
+    'interior design': ['interior design', 'interior designer', 'decor', 'painting', 'ceiling', 'tiles', 'curtains', 'furniture'],
+    'cleaner': ['cleaner', 'cleaners', 'cleaning', 'washing', 'laundry', 'compound'],
+    'painter': ['painter', 'painters', 'painting', 'paint', 'colour'],
+    'welder': ['welder', 'welders', 'welding', 'gate', 'metal', 'steel', 'grill', 'burglar proofing'],
+    'handyman': ['handyman', 'handymen', 'repair', 'fix', 'maintenance'],
   };
 
   String get _providerSectionTitle =>
