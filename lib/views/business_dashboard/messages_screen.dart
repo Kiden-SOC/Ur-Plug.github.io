@@ -61,6 +61,10 @@ class MessagesScreen extends StatelessWidget {
               final String otherUid =
               participants.firstWhere((p) => p != myUid, orElse: () => '');
 
+              final unreadCounts = data['unreadCounts'] as Map<String, dynamic>?;
+              final int unread = (unreadCounts?[myUid] as num?)?.toInt() ?? 0;
+              final bool hasUnread = unread > 0;
+
               return FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance.collection('users').doc(otherUid).get(),
                 builder: (context, userSnapshot) {
@@ -88,9 +92,27 @@ class MessagesScreen extends StatelessWidget {
                         data['lastMessage'] ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: hasUnread ? AppColors.textPrimary : AppColors.textMuted,
+                          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+                        ),
                       ),
-                      trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                      trailing: hasUnread
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentRedOrange,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              constraints: const BoxConstraints(minWidth: 20),
+                              child: Text(
+                                unread > 99 ? '99+' : '$unread',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                       onTap: () {
                         Navigator.push(
                           context,
