@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,11 +12,13 @@ import '../models/job_request.dart';
 import '../models/service_listing.dart';
 import '../models/provider_rating.dart';
 import '../models/top_customer.dart';
+import '../services/storage_service.dart';
 
 
 class ProviderProfileController extends ChangeNotifier {
   final ApiService _api = ApiService.instance;
   final AuthService _authService = AuthService();
+  final StorageService _storageService = StorageService.instance;
 
   String _email = '';
   ProviderProfile _profile = const ProviderProfile();
@@ -83,7 +87,8 @@ class ProviderProfileController extends ChangeNotifier {
   }
 
   Future<bool> completeOnboarding(ProviderProfile profile) async {
-    final finished = profile.copyWith(onboardingComplete: true);
+    final uploaded = await _uploadPendingPhotos(profile);
+    final finished = uploaded.copyWith(onboardingComplete: true);
     final ok = await _api.saveProviderProfile(_email, finished);
     await _syncProfileToFirestore(finished);
     if (ok) {
@@ -94,18 +99,51 @@ class ProviderProfileController extends ChangeNotifier {
   }
 
   Future<bool> updateProfile(ProviderProfile profile) async {
-    final ok = await _api.saveProviderProfile(_email, profile);
-    await _syncProfileToFirestore(profile);
+    final uploaded = await _uploadPendingPhotos(profile);
+    final ok = await _api.saveProviderProfile(_email, uploaded);
+    await _syncProfileToFirestore(uploaded);
     if (ok) {
-      _profile = profile.copyWith(onboardingComplete: true);
+      _profile = uploaded.copyWith(onboardingComplete: true);
       notifyListeners();
     }
     return ok;
   }
 
-  /// Writes the fields customers see on the provider profile (experience &
-  /// service description) to the provider's Firestore document so they
-  /// persist and are visible to consumers browsing providers.
+  /// Uploads a profile's photo and any business/work photos that are still
+  /// local on-device paths (as opposed to already-uploaded URLs), so the
+  /// saved profile only ever contains URLs any device can load.
+  Future<ProviderProfile> _uploadPendingPhotos(ProviderProfile profile) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return profile;
+
+    String profilePhotoPath = profile.profilePhotoPath;
+    if (profilePhotoPath.isNotEmpty &&
+        !profilePhotoPath.startsWith('http')) {
+      final url =
+          await _storageService.uploadProfilePhoto(uid, profilePhotoPath);
+      if (url != null) profilePhotoPath = url;
+    }
+
+    final businessPhotoPaths = <String>[];
+    for (final path in profile.businessPhotoPaths) {
+      if (path.startsWith('http')) {
+        businessPhotoPaths.add(path);
+      } else {
+        final url = await _storageService.uploadWorkPhoto(uid, path);
+        businessPhotoPaths.add(url ?? path);
+      }
+    }
+
+    return profile.copyWith(
+      profilePhotoPath: profilePhotoPath,
+      businessPhotoPaths: businessPhotoPaths,
+    );
+  }
+
+  /// Writes the fields customers see on the provider profile (experience,
+  /// service description, profile photo and work photos) to the provider's
+  /// Firestore document so they persist and are visible to consumers
+  /// browsing providers, and update live for anyone already viewing them.
   Future<void> _syncProfileToFirestore(ProviderProfile profile) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -113,6 +151,8 @@ class ProviderProfileController extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('providers').doc(uid).set({
         'bio': profile.bio,
         'yearsOfExperience': profile.yearsOfExperience,
+        'profilePhotoUrl': profile.profilePhotoPath,
+        'businessPhotoUrls': profile.businessPhotoPaths,
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Failed to sync provider profile to Firestore: $e');
@@ -125,8 +165,18 @@ class ProviderProfileController extends ChangeNotifier {
   }
 
   Future<bool> setProfilePhoto(String localPath) async {
-    final updated = _profile.copyWith(profilePhotoPath: localPath);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    String photoUrl = localPath;
+    if (uid != null) {
+      final uploaded =
+          await _storageService.uploadProfilePhoto(uid, localPath);
+      if (uploaded == null) return false;
+      photoUrl = uploaded;
+    }
+
+    final updated = _profile.copyWith(profilePhotoPath: photoUrl);
     final ok = await _api.saveProviderProfile(_email, updated);
+    await _syncProfileToFirestore(updated);
     if (ok) {
       _profile = updated;
       notifyListeners();
@@ -135,10 +185,19 @@ class ProviderProfileController extends ChangeNotifier {
   }
 
   Future<bool> addBusinessPhoto(String localPath) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    String photoUrl = localPath;
+    if (uid != null) {
+      final uploaded = await _storageService.uploadWorkPhoto(uid, localPath);
+      if (uploaded == null) return false;
+      photoUrl = uploaded;
+    }
+
     final updated = _profile.copyWith(
-      businessPhotoPaths: [..._profile.businessPhotoPaths, localPath],
+      businessPhotoPaths: [..._profile.businessPhotoPaths, photoUrl],
     );
     final ok = await _api.saveProviderProfile(_email, updated);
+    await _syncProfileToFirestore(updated);
     if (ok) {
       _profile = updated;
       notifyListeners();
@@ -148,10 +207,17 @@ class ProviderProfileController extends ChangeNotifier {
 
   Future<bool> addBusinessPhotos(List<String> localPaths) async {
     if (localPaths.isEmpty) return true;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final photoUrls = uid != null
+        ? await _storageService.uploadWorkPhotos(uid, localPaths)
+        : localPaths;
+    if (photoUrls.isEmpty) return false;
+
     final updated = _profile.copyWith(
-      businessPhotoPaths: [..._profile.businessPhotoPaths, ...localPaths],
+      businessPhotoPaths: [..._profile.businessPhotoPaths, ...photoUrls],
     );
     final ok = await _api.saveProviderProfile(_email, updated);
+    await _syncProfileToFirestore(updated);
     if (ok) {
       _profile = updated;
       notifyListeners();
@@ -159,16 +225,18 @@ class ProviderProfileController extends ChangeNotifier {
     return ok;
   }
 
-  Future<bool> removeBusinessPhoto(String localPath) async {
+  Future<bool> removeBusinessPhoto(String photoUrl) async {
     final updated = _profile.copyWith(
       businessPhotoPaths: _profile.businessPhotoPaths
-          .where((p) => p != localPath)
+          .where((p) => p != photoUrl)
           .toList(),
     );
     final ok = await _api.saveProviderProfile(_email, updated);
+    await _syncProfileToFirestore(updated);
     if (ok) {
       _profile = updated;
       notifyListeners();
+      unawaited(_storageService.deletePhoto(photoUrl));
     }
     return ok;
   }
@@ -217,6 +285,10 @@ class ProviderProfileController extends ChangeNotifier {
             isAvailable: data['available'] ?? true,
             bio: data['bio'] ?? '',
             yearsOfExperience: data['yearsOfExperience'] ?? 0,
+            profilePhotoPath: data['profilePhotoUrl'] ?? '',
+            businessPhotoPaths:
+                (data['businessPhotoUrls'] as List?)?.cast<String>() ??
+                    const [],
           );
         }
 
