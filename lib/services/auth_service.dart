@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
-
-
+import '../core/app_exceptions.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -25,7 +24,12 @@ class AuthService {
         password: password,
       );
 
-      String uid = credential.user!.uid;
+      final createdUser = credential.user;
+      if (createdUser == null) {
+        throw const AuthException(
+            'Account creation did not complete. Please try again.');
+      }
+      String uid = createdUser.uid;
 
       UserModel newUser = UserModel(
           uid: uid,
@@ -46,21 +50,25 @@ class AuthService {
           'businessName': businessName ?? '',
           'businessCategory': businessCategory ?? '',
           'businessCategoryLower': (businessCategory ?? '').toLowerCase(),
-          'businessEmailAddress' : email ?? '',
+          'businessEmailAddress' : email,
           'phone': contact,
           'district': district,
-          'district Lower': district.toLowerCase(),   // typo guard below
+          'districtLower': district.toLowerCase(),
           'town': town,
           'townLower': town.toLowerCase(),
           'rating': 0,
           'completedJobs': 0,
           'available': true,
+          'verificationStatus': 'unverified',
           'createdAt': DateTime.now(),
         });
       }
       return newUser;
     } on FirebaseAuthException catch (e) {
-      throw _mapAuthError(e);
+      throw AuthException(_mapAuthError(e));
+    } on FirebaseException catch (_) {
+      throw const AuthException(
+          'Your account was created but saving your profile failed. Please try logging in, or contact support if the problem continues.');
     }
   }
 
@@ -72,12 +80,16 @@ class AuthService {
       );
       return result.user;
     } on FirebaseAuthException catch (e) {
-      throw _mapAuthError(e);
+      throw AuthException(_mapAuthError(e));
     }
   }
 
   Future<void> resetPassword(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_mapAuthError(e));
+    }
   }
 
   Future<void> logout() async {
@@ -86,9 +98,13 @@ class AuthService {
 
   // fetching a single user's profile
   Future<UserModel?> getUserProfile(String uid) async {
-    DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) return null;
-    return UserModel.fromMap(uid, doc.data() as Map<String, dynamic>);
+    try {
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      return UserModel.fromMap(uid, doc.data() as Map<String, dynamic>);
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not load your profile. Check your connection and try again.');
+    }
   }
 
   // update a user's own profile fields
@@ -105,16 +121,76 @@ class AuthService {
     if (district != null) updates['district'] = district;
     if (town != null) updates['town'] = town;
 
-    if (updates.isNotEmpty) {
+    if (updates.isEmpty) return;
+
+    try {
       await _firestore.collection('users').doc(uid).update(updates);
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not save your changes. Please try again.');
     }
   }
 
-  // fetch a single provider's profile
+  /// Defense-in-depth admin check. Screens that gate admin-only content
+  /// should call this rather than trusting a role value cached at login
+  /// time, so a role downgrade/suspension takes effect immediately.
+  ///
+  /// Accepts both 'admin' and 'super_admin' roles.
+  Future<bool> isCurrentUserAdmin() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) return false;
+      final data = doc.data() as Map<String, dynamic>;
+      final role = data['role'] as String? ?? '';
+      return role == 'admin' || role == 'super_admin';
+    } on FirebaseException catch (_) {
+      return false;
+    }
+  }
+
+  /// Returns the full role string for the current user, or null if not
+  /// signed in. Use this to distinguish super_admin from admin in the UI.
+  Future<String?> getCurrentUserRole() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) return null;
+      final data = doc.data() as Map<String, dynamic>;
+      return data['role'] as String?;
+    } on FirebaseException catch (_) {
+      return null;
+    }
+  }
+
+  /// Looks up a user document by email address (case-sensitive Firestore
+  /// query). Returns null if no user with that email exists.
+  /// Used by SuperAdminTab to promote a user by email.
+  Future<UserModel?> getUserByEmail(String email) async {
+    try {
+      final snap = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return null;
+      final doc = snap.docs.first;
+      return UserModel.fromMap(doc.id, doc.data());
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not search for that user. Check your connection and try again.');
+    }
+  }
+
+
   Future<Map<String, dynamic>?> getProviderProfile(String uid) async {
-    DocumentSnapshot doc = await _firestore.collection('providers').doc(uid).get();
-    if (!doc.exists) return null;
-    return doc.data() as Map<String, dynamic>;
+    try {
+      DocumentSnapshot doc = await _firestore.collection('providers').doc(uid).get();
+      if (!doc.exists) return null;
+      return doc.data() as Map<String, dynamic>;
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not load provider details. Check your connection and try again.');
+    }
   }
 
   // update a provider's business fields
@@ -142,8 +218,12 @@ class AuthService {
     }
     if (available != null) updates['available'] = available;
 
-    if (updates.isNotEmpty) {
+    if (updates.isEmpty) return;
+
+    try {
       await _firestore.collection('providers').doc(uid).update(updates);
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not save your business profile. Please try again.');
     }
   }
 
@@ -155,18 +235,22 @@ class AuthService {
       return null;
     }
 
-    final doc = await _firestore
-      .collection('users')
-      .doc(user.uid)
-      .get();
+    try {
+      final doc = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .get();
 
-    if (doc.exists) {
-      return UserModel.fromMap(
-        doc.id,
-        doc.data()!,
-      );
+      if (doc.exists) {
+        return UserModel.fromMap(
+          doc.id,
+          doc.data() as Map<String, dynamic>,
+        );
+      }
+      return null;
+    } on FirebaseException catch (_) {
+      throw const AuthException('Could not load your profile. Check your connection and try again.');
     }
-    return null;
   }
 
   String _mapAuthError(FirebaseAuthException e) {
@@ -181,6 +265,10 @@ class AuthService {
         return 'No account found with that email.';
       case 'wrong-password':
         return 'Incorrect password.';
+      case 'invalid-credential':
+        return 'Incorrect email or password.';
+      case 'user-disabled':
+        return 'This account has been suspended. Contact support if you think this is a mistake.';
       case 'too-many-requests':
         return 'Too many attempts. Try again later.';
       default:
