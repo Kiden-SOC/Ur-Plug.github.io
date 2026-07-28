@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 import '../../state/customer_profile_controller.dart';
 import 'customer_chat_screen.dart';
 import 'package:ur_plug/services/auth_service.dart';
@@ -27,6 +27,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   bool _checkingStatus = true;
   bool _alreadyRequested = false;
   bool _submitting = false;
+  bool _checkingReviewEligibility = false;
 
   // Added variables for the lecturer's pop-up requirement
   final _dialogFormKey = GlobalKey<FormState>();
@@ -42,7 +43,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   void initState() {
     super.initState();
     _checkExistingRequest();
-    
+
     // Auto-populates district field using customer's profile location
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -149,7 +150,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Book $providerName', 
+                      'Book $providerName',
                       style: const TextStyle(fontWeight: FontWeight.bold, color: brandPrimary, fontSize: 18),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -267,7 +268,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                           hintText: 'Describe your issue details here...',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                                                validator: (value) => value!.isEmpty ? 'Please describe the problem' : null,
+                        validator: (value) => value!.isEmpty ? 'Please describe the problem' : null,
                       ),
                     ],
                   ),
@@ -296,7 +297,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       final String issueDetails = _dialogDetailsController.text.trim();
 
                       Navigator.of(dialogContext).pop();
-                      
+
                       _requestProvider(
                         district: targetDistrict,
                         town: targetTown,
@@ -317,7 +318,46 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 
-  void _showReviewDialog(BuildContext context) {
+  /// Looks for a completed, not-yet-reviewed booking between the current
+  /// customer and this provider. Returns the booking doc ID, or null if
+  /// no eligible booking exists.
+  Future<String?> _findEligibleBookingId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final providerId = widget.provider['id'] ?? '';
+    if (user == null || providerId.isEmpty) return null;
+
+    final snap = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('customerUid', isEqualTo: user.uid)
+        .where('providerUid', isEqualTo: providerId)
+        .where('status', isEqualTo: 'completed')
+        .where('reviewed', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return snap.docs.first.id;
+  }
+
+  Future<void> _onLeaveReviewPressed() async {
+    setState(() => _checkingReviewEligibility = true);
+    final jobId = await _findEligibleBookingId();
+    if (!mounted) return;
+    setState(() => _checkingReviewEligibility = false);
+
+    if (jobId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only review a provider after a completed job with them.'),
+        ),
+      );
+      return;
+    }
+
+    _showReviewDialog(context, jobId);
+  }
+
+  void _showReviewDialog(BuildContext context, String jobId) {
     final commentController = TextEditingController();
     double starRating = 5;
 
@@ -367,24 +407,55 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 if (user == null) return;
                 final customerProfile = context.read<CustomerProfileController>().profile;
                 final providerId = widget.provider['id'] ?? '';
+                if (providerId.isEmpty) return;
 
-                await FirebaseFirestore.instance
-                    .collection('providers')
-                    .doc(providerId)
-                    .collection('reviews')
-                    .add({
-                  'customerUid': user.uid,
-                  'customerName': customerProfile.name.isNotEmpty ? customerProfile.name : 'Anonymous',
-                  'rating': starRating,
-                  'comment': commentController.text.trim(),
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
+                final providerRef =
+                FirebaseFirestore.instance.collection('providers').doc(providerId);
+                final reviewRef = providerRef.collection('reviews').doc();
+                final jobRef = FirebaseFirestore.instance.collection('bookings').doc(jobId);
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Review submitted!')),
-                  );
+                try {
+                  await FirebaseFirestore.instance.runTransaction((tx) async {
+                    final providerSnap = await tx.get(providerRef);
+                    final data = providerSnap.data() ?? {};
+                    final currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+                    final currentAvg = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+                    final newCount = currentCount + 1;
+                    final newAvg = ((currentAvg * currentCount) + starRating) / newCount;
+
+                    tx.set(reviewRef, {
+                      'jobId': jobId,
+                      'customerUid': user.uid,
+                      'customerName': customerProfile.name.isNotEmpty
+                          ? customerProfile.name
+                          : 'Anonymous',
+                      'rating': starRating,
+                      'comment': commentController.text.trim(),
+                      'createdAt': FieldValue.serverTimestamp(),
+                    });
+
+                    tx.update(providerRef, {
+                      'rating': newAvg,
+                      'reviewCount': newCount,
+                    });
+
+                    tx.update(jobRef, {'reviewed': true});
+                  });
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Review submitted!')),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Review submit error: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Couldn't submit review. Try again.")),
+                    );
+                  }
                 }
               },
               child: const Text('Submit'),
@@ -395,7 +466,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     final String providerId = widget.provider['id'] ?? '';
 
@@ -861,10 +932,10 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                       subtitle: const Text('Place a direct phone call'),
                                       onTap: () async {
                                         Navigator.pop(context); // Close sheet
-                                        
+
                                         // Pulls phone dynamic variable directly from your provider map
                                         final String phoneNumber = widget.provider['phone'] ?? '';
-                                        
+
                                         if (phoneNumber.isNotEmpty) {
                                           final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
                                           if (await canLaunchUrl(launchUri)) {
@@ -905,8 +976,14 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                         SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => _showReviewDialog(context),
-                icon: const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
+                onPressed: _checkingReviewEligibility ? null : _onLeaveReviewPressed,
+                icon: _checkingReviewEligibility
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+                )
+                    : const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
                 label: const Text('Leave a Review', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: brandPrimary),
@@ -945,19 +1022,19 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   }
                   final reviews = snapshot.data!.docs;
                   return ListView.builder(
-                    shrinkWrap: true,                    
+                    shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: reviews.length,
                     itemBuilder: (context, index) {
                       final data = reviews[index].data() as Map<String, dynamic>;
                       final name = data['customerName'] ?? 'Anonymous';
                       final comment = data['comment'] ?? '';
-                      final ratingValue = (data['rating'] ?? 5.0).toString();
+                      final reviewRatingValue = (data['rating'] ?? 5.0).toString();
 
                       return _buildReviewCard(
                         clientName: name,
                         reviewText: comment,
-                        starRating: ratingValue,
+                        starRating: reviewRatingValue,
                       );
                     },
                   );

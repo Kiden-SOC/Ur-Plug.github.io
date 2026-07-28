@@ -56,6 +56,7 @@ class _SearchScreenState extends State<SearchScreen> {
         'district': data['district'] ?? '',
         'town': data['town'] ?? '',
         'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+        'reviewCount': data['reviewCount'] ?? 0,
         'jobs': data['completedJobs'] ?? 0,
         'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
         'bio': data['bio'] ?? '',
@@ -407,7 +408,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      '${provider['rating'] ?? '0.0'} (${provider['jobs'] ?? '0 jobs'})',
+                                      '${(provider['rating'] as double? ?? 0.0).toStringAsFixed(1)} (${provider['reviewCount'] ?? 0})',
                                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -627,6 +628,7 @@ class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
           'district': data['district'] ?? '',
           'town': data['town'] ?? '',
           'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+          'reviewCount': data['reviewCount'] ?? 0,
           'jobs': data['completedJobs'] ?? 0,
           'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
           'bio': data['bio'] ?? '',
@@ -699,7 +701,7 @@ class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 16),
-                          Text('${provider['rating'] ?? 0}'),
+                          Text('${(provider['rating'] as double? ?? 0.0).toStringAsFixed(1)} (${provider['reviewCount'] ?? 0})'),
                         ],
                       ),
                       onTap: () {

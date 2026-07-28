@@ -1,78 +1,134 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/review.dart';
-import 'chat_service.dart' show ChatConfig;
 
 class ReviewService {
-  final String authToken;
+  final String authToken; // kept for constructor compatibility, unused now
 
   ReviewService({required this.authToken});
 
-  Map<String, String> get _headers => {
-        'Authorization': 'Bearer $authToken',
-        'Content-Type': 'application/json',
-      };
-
   Future<ReviewEligibility> checkEligibility(String jobId) async {
-    final res = await http.get(
-      Uri.parse('${ChatConfig.httpBase}/api/reviews/eligibility/$jobId/'),
-      headers: _headers,
-    );
-    if (res.statusCode != 200) {
-      return ReviewEligibility(eligible: false, reason: 'error');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return ReviewEligibility(eligible: false, reason: 'not_a_participant');
     }
-    return ReviewEligibility.fromJson(jsonDecode(res.body));
+
+    final jobSnap = await FirebaseFirestore.instance.collection('bookings').doc(jobId).get();
+    if (!jobSnap.exists) {
+      return ReviewEligibility(eligible: false, reason: 'not_a_participant');
+    }
+    final job = jobSnap.data()!;
+
+    if (job['customerUid'] != uid) {
+      return ReviewEligibility(eligible: false, reason: 'not_a_participant');
+    }
+    if (job['status'] != 'completed') {
+      return ReviewEligibility(eligible: false, reason: 'job_not_confirmed');
+    }
+
+    final existing = await FirebaseFirestore.instance
+        .collection('providers')
+        .doc(job['providerUid'])
+        .collection('reviews')
+        .where('jobId', isEqualTo: jobId)
+        .limit(1)
+        .get();
+    if (existing.docs.isNotEmpty) {
+      return ReviewEligibility(eligible: false, reason: 'already_reviewed');
+    }
+
+    return ReviewEligibility(eligible: true);
   }
 
   Future<List<Review>> fetchReviewsFor(String revieweeId) async {
-    final res = await http.get(
-      Uri.parse('${ChatConfig.httpBase}/api/reviews/?reviewee=$revieweeId'),
-      headers: _headers,
-    );
-    if (res.statusCode != 200) return [];
-    final body = jsonDecode(res.body);
-    final results = body is List ? body : (body['results'] as List? ?? []);
-    return results.map((r) => Review.fromJson(r)).toList();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('providers')
+        .doc(revieweeId)
+        .collection('reviews')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return Review(
+        id: doc.id,
+        jobId: data['jobId'] ?? '',
+        reviewerId: data['reviewerId'] ?? '',
+        reviewerName: data['reviewerName'] ?? '',
+        revieweeId: revieweeId,
+        revieweeName: data['revieweeName'] ?? '',
+        rating: (data['rating'] as num?)?.toInt() ?? 0,
+        comment: data['comment'] ?? '',
+        createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      );
+    }).toList();
   }
 
-  /// Returns the created Review on success. Throws a [ReviewSubmitException]
-  /// with the backend's validation message on failure (e.g. job not
-  /// confirmed, already reviewed).
   Future<Review> submitReview({
     required String jobId,
     required int rating,
     required String comment,
   }) async {
-    final res = await http.post(
-      Uri.parse('${ChatConfig.httpBase}/api/reviews/'),
-      headers: _headers,
-      body: jsonEncode({
-        'job': jobId,
-        'rating': rating,
-        'comment': comment,
-      }),
-    );
-
-    if (res.statusCode == 201) {
-      return Review.fromJson(jsonDecode(res.body));
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw ReviewSubmitException('You need to be signed in to leave a review.');
     }
 
-    throw ReviewSubmitException(_extractError(res.body));
-  }
+    final jobRef = FirebaseFirestore.instance.collection('bookings').doc(jobId);
+    final jobSnap = await jobRef.get();
+    if (!jobSnap.exists) {
+      throw ReviewSubmitException('Job not found.');
+    }
+    final job = jobSnap.data()!;
+    final providerId = job['providerUid'] as String;
+    final providerName = job['providerName'] ?? '';
 
-  String _extractError(String body) {
+    final providerRef = FirebaseFirestore.instance.collection('providers').doc(providerId);
+    final reviewRef = providerRef.collection('reviews').doc();
+
     try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map) {
-        final firstKey = decoded.keys.first;
-        final val = decoded[firstKey];
-        if (val is List && val.isNotEmpty) return val.first.toString();
-        return val.toString();
-      }
-    } catch (_) {}
-    return 'Something went wrong submitting your review.';
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final providerSnap = await tx.get(providerRef);
+        final data = providerSnap.data() ?? {};
+        final currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+        final currentAvg = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+        final newCount = currentCount + 1;
+        final newAvg = ((currentAvg * currentCount) + rating) / newCount;
+
+        tx.set(reviewRef, {
+          'jobId': jobId,
+          'reviewerId': user.uid,
+          'reviewerName': user.displayName ?? '',
+          'revieweeName': providerName,
+          'rating': rating,
+          'comment': comment,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        tx.update(providerRef, {
+          'rating': newAvg,
+          'reviewCount': newCount,
+        });
+
+        tx.update(jobRef, {'reviewed': true});
+      });
+    } catch (e) {
+      throw ReviewSubmitException('Something went wrong submitting your review.');
+    }
+
+    return Review(
+      id: reviewRef.id,
+      jobId: jobId,
+      reviewerId: user.uid,
+      reviewerName: user.displayName ?? '',
+      revieweeId: providerId,
+      revieweeName: providerName,
+      rating: rating,
+      comment: comment,
+      createdAt: DateTime.now(),
+    );
   }
 }
 
