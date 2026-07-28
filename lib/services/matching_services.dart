@@ -35,23 +35,37 @@ class MatchingService {
     "Computer Repair": [
       "computer", "laptop", "printer", "keyboard", "software", "windows",
     ],
-    "Handyman": [
-      "repair", "fix", "maintenance", "general",
-    ],
   };
 
+  // Kept separate from serviceKeywords so it never outscores a more specific
+  // trade — it's only checked if nothing else matches at all.
+  final List<String> handymanKeywords = ["repair", "fix", "maintenance", "general"];
+
+  /// Scores every category by how many of its keywords appear in the
+  /// description, and returns whichever has the most matches. Falls back to
+  /// "Handyman" only if no specific trade matched anything.
   String identifyService(String description) {
     description = description.toLowerCase();
 
+    String bestMatch = "";
+    int bestCount = 0;
+
     for (var entry in serviceKeywords.entries) {
-      for (String keyword in entry.value) {
-        if (description.contains(keyword)) {
-          return entry.key;
-        }
+      int count = entry.value.where((keyword) => description.contains(keyword)).length;
+      if (count > bestCount) {
+        bestCount = count;
+        bestMatch = entry.key;
       }
     }
 
-    return "";
+    if (bestMatch.isEmpty) {
+      bool handymanMatch = handymanKeywords.any((keyword) => description.contains(keyword));
+      if (handymanMatch) {
+        return "Handyman";
+      }
+    }
+
+    return bestMatch;
   }
 
   Future<Map<String, dynamic>> searchProviders({
