@@ -13,6 +13,8 @@ class JobRequest {
   final String landmark;
   final String date;
   final String time;
+  final String startDate;
+  final String endDate;
   final String deadline;
   final String requestedTime;
   JobStatus status;
@@ -28,6 +30,8 @@ class JobRequest {
     this.landmark = '',
     this.date = '',
     this.time = '',
+    this.startDate = '',
+    this.endDate = '',
     this.deadline = '',
     required this.requestedTime,
     required this.status,
