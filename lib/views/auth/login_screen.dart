@@ -50,30 +50,45 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user == null) return;
 
-      //admin account
-      if (user.email == 'admin@urplug.com') {
-        if (!mounted) return;
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AdminScreen(),
-          ),
-        );
-        return;
-      }
-      //other users
-
       // Fetch the user's profile from Firestore
       final profile = await _authService.getUserProfile(user.uid);
 
       if (profile == null) {
-        throw Exception("User profile not found.");
+        throw Exception('User profile not found. Please contact support.');
       }
 
       if (!mounted) return;
 
-      // Redirect based on role
+      // Block suspended accounts before letting them into the app. A
+      // provider's suspension status lives on their provider doc; a plain
+      // consumer's lives on their user doc.
+      bool isSuspended = profile.accountStatus == 'suspended';
+      String? suspensionReason = profile.suspensionReason;
+      if (!isSuspended && profile.role == 'producer') {
+        final providerData = await _authService.getProviderProfile(user.uid);
+        if (providerData != null && providerData['accountStatus'] == 'suspended') {
+          isSuspended = true;
+          suspensionReason = providerData['suspensionReason'];
+        }
+      }
+
+      if (isSuspended) {
+        await _authService.logout();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This account has been suspended.${suspensionReason != null ? ' Reason: $suspensionReason' : ''} Contact support if you think this is a mistake.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Redirect based on role — super_admin and admin both go to AdminScreen
       if (profile.role == 'producer') {
         Navigator.pushReplacement(
           context,
@@ -88,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (_) => const SearchScreen(),
           ),
         );
-      } else if (profile.role == 'admin') {
+      } else if (profile.role == 'admin' || profile.role == 'super_admin') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -98,17 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Unknown user role."),
+            content: Text('Unknown user role. Please contact support.'),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
+        SnackBar(content: Text(e.toString())),
       );
     }
   }
@@ -169,24 +181,26 @@ class _LoginScreenState extends State<LoginScreen> {
               if (email.isNotEmpty) {
                 try {
                   await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-                  Navigator.pop(context); // Close dialog safely
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Password reset link successfully sent to $email'),
                       backgroundColor: brandSecondary,
-                  ),
-                );
-              } on FirebaseAuthException catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error: ${e.message}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                    ),
+                  );
+                } on FirebaseAuthException catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${e.message}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
-            }
-          },
-          child: const Text('Send Reset Link', style: TextStyle(fontWeight: FontWeight.bold)),
+            },
+            child: const Text('Send Reset Link', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
