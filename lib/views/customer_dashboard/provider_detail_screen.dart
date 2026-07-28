@@ -398,23 +398,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
 @override
   Widget build(BuildContext context) {
     final String providerId = widget.provider['id'] ?? '';
-    final String businessName = widget.provider['name'] ?? 'Unnamed Business';
-    final String tradeTitle = widget.provider['category'] ?? '';
-    final String district = (widget.provider['district'] ?? '').toString();
-    final String town = (widget.provider['town'] ?? '').toString();
-    final String rating = (widget.provider['rating'] ?? '0.0').toString();
-    final String completedJobs = (widget.provider['jobs'] ?? '0').toString();
-
-    // RETRIEVES THE BIO FIELD FROM FIRESTORE
-    // Note: If your Firestore field is named 'description' or 'about', change 'bio' below to match it.
-    final String businessBio = (widget.provider['bio'] ?? '').toString().isNotEmpty
-        ? widget.provider['bio'].toString()
-        : 'No service description provided by this business.';
-
-    // Years of experience the provider entered when signing up.
-    final int yearsOfExperience = int.tryParse(
-            (widget.provider['yearsOfExperience'] ?? '0').toString()) ??
-        0;
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -424,7 +407,169 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: providerId.isNotEmpty
+            ? FirebaseFirestore.instance.collection('providers').doc(providerId).snapshots()
+            : null,
+        builder: (context, snapshot) {
+          // Falls back to whatever the list screen already had (id/name/
+          // category at minimum) while the live doc is still loading, then
+          // switches to the live Firestore data — which is what keeps the
+          // photo, bio and services current the moment the provider changes
+          // them, with no need to leave and reopen this screen.
+          final Map<String, dynamic> data =
+              (snapshot.data?.data() as Map<String, dynamic>?) ?? widget.provider;
+
+          final String businessName = _pick(data, ['businessName', 'name'], 'Unnamed Business');
+          final String tradeTitle = _pick(data, ['businessCategory', 'category']);
+          final String district = _pick(data, ['district']);
+          final String town = _pick(data, ['town']);
+          final String rating = (data['rating'] ?? '0.0').toString();
+          final String completedJobs = (data['jobs'] ?? data['completedJobs'] ?? '0').toString();
+          final String profilePhotoUrl = _pick(data, ['profilePhotoUrl']);
+          final List<String> workPhotos = (data['businessPhotoUrls'] as List?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [];
+
+          // RETRIEVES THE BIO FIELD FROM FIRESTORE
+          final String rawBio = _pick(data, ['bio']);
+          final String businessBio =
+              rawBio.isNotEmpty ? rawBio : 'No service description provided by this business.';
+
+          // Years of experience the provider entered when signing up.
+          final int yearsOfExperience = int.tryParse((data['yearsOfExperience'] ?? '0').toString()) ?? 0;
+
+          return _buildBody(
+            context: context,
+            providerId: providerId,
+            businessName: businessName,
+            tradeTitle: tradeTitle,
+            district: district,
+            town: town,
+            rating: rating,
+            completedJobs: completedJobs,
+            profilePhotoUrl: profilePhotoUrl,
+            workPhotos: workPhotos,
+            businessBio: businessBio,
+            yearsOfExperience: yearsOfExperience,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Reads the first non-empty value found across [keys] in [data], so the
+  /// UI works whether the map came from the live Firestore doc (which uses
+  /// names like `businessName`) or the fallback passed in from a list
+  /// screen (which sometimes used shorter aliases like `name`).
+  String _pick(Map<String, dynamic> data, List<String> keys, [String fallback = '']) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value != null && value.toString().isNotEmpty) return value.toString();
+    }
+    return fallback;
+  }
+
+  void _showWorkPhotosSheet(BuildContext context, String providerId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return StreamBuilder<DocumentSnapshot>(
+              // A separate live listener so the gallery keeps updating even
+              // while the sheet is open, in case the provider adds photos
+              // from another device at that exact moment.
+              stream: FirebaseFirestore.instance.collection('providers').doc(providerId).snapshots(),
+              builder: (context, snapshot) {
+                final data = snapshot.data?.data() as Map<String, dynamic>?;
+                final photos = (data?['businessPhotoUrls'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.photo_library_outlined, color: brandPrimary),
+                          const SizedBox(width: 8),
+                          Text('Work photos (${photos.length})',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: brandPrimary)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: photos.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'This provider hasn\'t uploaded any work photos yet.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                              )
+                            : GridView.builder(
+                                controller: scrollController,
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                ),
+                                itemCount: photos.length,
+                                itemBuilder: (context, index) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.network(
+                                      photos[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: screenBackground,
+                                        alignment: Alignment.center,
+                                        child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                      ),
+                                      loadingBuilder: (context, child, progress) => progress == null
+                                          ? child
+                                          : const Center(
+                                              child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBody({
+    required BuildContext context,
+    required String providerId,
+    required String businessName,
+    required String tradeTitle,
+    required String district,
+    required String town,
+    required String rating,
+    required String completedJobs,
+    required String profilePhotoUrl,
+    required List<String> workPhotos,
+    required String businessBio,
+    required int yearsOfExperience,
+  }) {
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,7 +587,25 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                    child: const Icon(Icons.storefront, size: 45, color: brandPrimary),
+                    child: profilePhotoUrl.isEmpty
+                        ? const Icon(Icons.storefront, size: 45, color: brandPrimary)
+                        : ClipOval(
+                            child: Image.network(
+                              profilePhotoUrl,
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.storefront, size: 45, color: brandPrimary),
+                              loadingBuilder: (context, child, progress) => progress == null
+                                  ? child
+                                  : const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+                                    ),
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Text(businessName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary), textAlign: TextAlign.center),
@@ -575,6 +738,27 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       },
                     ),
                   ],
+                ),
+              ),
+            const SizedBox(height: 16),
+
+            if (providerId.isNotEmpty)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showWorkPhotosSheet(context, providerId),
+                  icon: const Icon(Icons.photo_library_outlined, size: 18, color: brandPrimary),
+                  label: Text(
+                    workPhotos.isEmpty
+                        ? 'View work photos'
+                        : 'View work photos (${workPhotos.length})',
+                    style: const TextStyle(color: brandPrimary, fontWeight: FontWeight.bold),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: brandPrimary),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
               ),
             const SizedBox(height: 16),
@@ -781,7 +965,6 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
               ),
           ],
         ),
-      ),
     );
   }
 
