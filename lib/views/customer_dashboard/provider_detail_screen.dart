@@ -931,24 +931,59 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                       title: const Text('Call Provider', style: TextStyle(fontWeight: FontWeight.w600)),
                                       subtitle: const Text('Place a direct phone call'),
                                       onTap: () async {
-                                        Navigator.pop(context); // Close sheet
+                                        Navigator.pop(context);
 
-                                        // Pulls phone dynamic variable directly from your provider map
-                                        final String phoneNumber = widget.provider['phone'] ?? '';
+                                        try {
+                                          // Try the phone stored in the providers collection first
+                                          String phoneNumber = (widget.provider['phone'] ?? '').toString().trim();
 
-                                        if (phoneNumber.isNotEmpty) {
-                                          final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-                                          if (await canLaunchUrl(launchUri)) {
-                                            await launchUrl(launchUri);
-                                          } else {
-                                            if (!context.mounted) return;
+                                          // Fallback: get the phone from the users collection
+                                          if (phoneNumber.isEmpty) {
+                                            final String providerUid = widget.provider['id'] ?? '';
+
+                                            if (providerUid.isNotEmpty) {
+                                              final userDoc = await FirebaseFirestore.instance
+                                                  .collection('users')
+                                                  .doc(providerUid)
+                                                  .get();
+
+                                              if (userDoc.exists) {
+                                                phoneNumber =
+                                                    (userDoc.data()?['contact'] ?? '').toString().trim();
+                                              }
+                                            }
+                                          }
+
+                                          if (phoneNumber.isEmpty) {
                                             ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Could not launch the phone dialer.')),
+                                              const SnackBar(
+                                                content: Text('Provider phone number not available.'),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          final Uri phoneUri = Uri(
+                                            scheme: 'tel',
+                                            path: phoneNumber,
+                                          );
+
+                                          if (await canLaunchUrl(phoneUri)) {
+                                            await launchUrl(phoneUri);
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Phone number: $phoneNumber\n(No phone app available on this device)',
+                                                ),
+                                              ),
                                             );
                                           }
-                                        } else {
+                                        } catch (e) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Provider phone number not available.')),
+                                            SnackBar(
+                                              content: Text('Error: $e'),
+                                            ),
                                           );
                                         }
                                       },
