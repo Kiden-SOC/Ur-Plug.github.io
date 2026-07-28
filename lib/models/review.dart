@@ -36,7 +36,6 @@ class Review {
   }
 }
 
-/// Result of GET /api/reviews/eligibility/<job_id>/
 class ReviewEligibility {
   final bool eligible;
   final String? reason;
@@ -50,7 +49,6 @@ class ReviewEligibility {
     );
   }
 
-  /// Human-readable copy for each reason the backend can return.
   String get message {
     switch (reason) {
       case 'job_not_confirmed':
