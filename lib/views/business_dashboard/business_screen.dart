@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../state/provider_profile_controller.dart';
@@ -200,6 +202,27 @@ class _BrandHeader extends StatelessWidget {
 class _OverviewTab extends StatelessWidget {
   const _OverviewTab();
 
+  Stream<int> _unreadMessageStream() {
+    final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (myUid.isEmpty) return Stream.value(0);
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: myUid)
+        .snapshots()
+        .map((snapshot) {
+      int total = 0;
+      for (final doc in snapshot.docs) {
+        // Field is 'unreadCount' (singular) on the chat doc — matches
+        // every write path (customer_chat_screen.dart, provider_chat_screen.dart)
+        // and the messages_screen.dart inbox tile. 'unreadCounts' never existed,
+        // so this always summed to 0 before.
+        final unreadCount = doc.data()['unreadCount'] as Map<String, dynamic>?;
+        total += (unreadCount?[myUid] as num?)?.toInt() ?? 0;
+      }
+      return total;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<ProviderProfileController>();
@@ -253,16 +276,25 @@ class _OverviewTab extends StatelessWidget {
                       builder: (context) => const UnfinishedJobsScreen()),
                 ),
               ),
-              _ActionTile(
-                icon: Icons.chat_bubble,
-                label: 'Messages',
-                gradient: const [Color(0xFF14A38B), Color(0xFF0B5E56)],
-                badgeCount: controller.unreadMessageCount,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const MessagesScreen()),
-                ),
+              StreamBuilder<int>(
+                // The Messages badge used to come from controller.unreadMessageCount,
+                // which is fed by the Django chat-threads API. That backend isn't
+                // built yet, so this reads live from Firestore instead — the same
+                // 'chats' collection the actual chat screens write unreadCount to.
+                stream: _unreadMessageStream(),
+                builder: (context, snapshot) {
+                  return _ActionTile(
+                    icon: Icons.chat_bubble,
+                    label: 'Messages',
+                    gradient: const [Color(0xFF14A38B), Color(0xFF0B5E56)],
+                    badgeCount: snapshot.data,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const MessagesScreen()),
+                    ),
+                  );
+                },
               ),
               _ActionTile(
                 icon: Icons.history,

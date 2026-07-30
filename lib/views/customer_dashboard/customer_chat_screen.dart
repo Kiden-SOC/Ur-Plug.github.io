@@ -37,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
         : '${widget.providerUid}_$_myUid';
     _providerDisplayName = widget.providerName;
     _loadProviderName();
+    _markAsRead();
   }
 
   Future<void> _loadProviderName() async {
@@ -55,6 +56,23 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // Clears this customer's unread badge for this chat. Only touches the
+  // doc if it already exists — writing a bare 'unreadCount.$_myUid' field
+  // via set-merge on a chat that doesn't exist yet would create a doc
+  // missing the 'participants' array, which then fails every rule check
+  // that reads resource.data.participants.
+  Future<void> _markAsRead() async {
+    final chatRef = FirebaseFirestore.instance.collection('chats').doc(_chatId);
+    try {
+      final snapshot = await chatRef.get();
+      if (snapshot.exists) {
+        await chatRef.update({'unreadCount.$_myUid': 0});
+      }
+    } catch (_) {
+      // Non-fatal — worst case the badge doesn't clear until next update.
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -66,6 +84,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final customerName = context.read<CustomerProfileController>().profile.name;
 
     final chatRef = FirebaseFirestore.instance.collection('chats').doc(_chatId);
+
+    // Dotted keys like 'unreadCount.<uid>' only expand into a nested map
+    // path inside update() — inside set(merge:true) they're taken as one
+    // literal field name (dots included), which silently creates junk
+    // top-level fields instead of updating the unreadCount map. So the
+    // base fields go through set/merge, and unreadCount gets its own
+    // update() call right after.
     await chatRef.set({
       'participants': [_myUid, widget.providerUid],
       'providerUid': widget.providerUid,
@@ -75,6 +100,11 @@ class _ChatScreenState extends State<ChatScreen> {
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    await chatRef.update({
+      'unreadCount.${widget.providerUid}': FieldValue.increment(1),
+      'unreadCount.$_myUid': 0,
+    });
 
     await chatRef.collection('messages').add({
       'senderUid': _myUid,
