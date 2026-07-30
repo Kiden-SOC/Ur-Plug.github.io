@@ -1,286 +1,206 @@
+// lib/services/chat_service.dart
+//
+// Firestore-backed implementation of ChatRoomService. Adapts your
+// ChatMessage / ChatThread models to Firestore's document shape so
+// ChatScreen doesn't need to change.
+//
+// Firestore structure used:
+//
+// chats/{chatId}
+//   participants: [uid1, uid2]
+//   lastMessage: string
+//   lastMessageTime: Timestamp
+//   unreadCount: { uid1: 0, uid2: 0 }
+//   typing: { uid1: false, uid2: false }
+//
+// chats/{chatId}/messages/{messageId}
+//   senderUid: string
+//   senderName: string
+//   content: string
+//   messageType: string   (matches MessageType enum names)
+//   mediaUrl: string?
+//   createdAt: Timestamp
+
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/chat_message.dart';
 import '../models/chat_thread.dart';
-import '../services/chat_service.dart';
 
-class ChatScreen extends StatefulWidget {
-  final ChatThread thread;
+class ChatRoomService {
+  ChatRoomService({
+    required this.threadId,
+    required this.authToken, // unused with Firestore — kept so ChatScreen's constructor call doesn't need to change
+    required this.currentUserId,
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final String threadId;
   final String authToken;
   final String currentUserId;
+  final FirebaseFirestore _firestore;
 
-  const ChatScreen({
-    super.key,
-    required this.thread,
-    required this.authToken,
-    required this.currentUserId,
-  });
+  final _messagesController = StreamController<ChatMessage>.broadcast();
+  final _typingController = StreamController<bool>.broadcast();
+  final _connectionController = StreamController<bool>.broadcast();
 
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
+  Stream<ChatMessage> get messages => _messagesController.stream;
+  Stream<bool> get typingStatus => _typingController.stream;
+  Stream<bool> get connectionStatus => _connectionController.stream;
 
-class _ChatScreenState extends State<ChatScreen> {
-  late final ChatRoomService _service;
-  final _messages = <ChatMessage>[];
-  final _scrollController = ScrollController();
-  final _textController = TextEditingController();
-  final _uuid = const Uuid();
+  // Tracks message ids already known to the UI (via history load or this
+  // user's own optimistic send) so the live listener never re-emits or
+  // duplicates them.
+  final Set<String> _deliveredIds = {};
 
-  bool _isConnected = false;
-  bool _plugIsTyping = false;
-  StreamSubscription? _msgSub, _typingSub, _connSub;
-  Timer? _typingDebounce;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _messagesSub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _threadSub;
 
-  @override
-  void initState() {
-    super.initState();
-    _service = ChatRoomService(
-      threadId: widget.thread.id,
-      authToken: widget.authToken,
-      currentUserId: widget.currentUserId,
-    );
-    _loadHistory();
-    _service.connect();
+  DocumentReference<Map<String, dynamic>> get _chatRef =>
+      _firestore.collection('chats').doc(threadId);
 
-    _msgSub = _service.messages.listen((msg) {
-      setState(() => _messages.add(msg));
-      _scrollToBottom();
-      if (!msg.isMine(widget.currentUserId)) {
-        _service.markRead(msg.id);
+  CollectionReference<Map<String, dynamic>> get _messagesRef =>
+      _chatRef.collection('messages');
+
+  /// Fetches existing message history once, newest-first (ChatScreen
+  /// reverses it before inserting). Call this before [connect].
+  Future<List<ChatMessage>> fetchHistory() async {
+    final snapshot =
+    await _messagesRef.orderBy('createdAt', descending: true).get();
+
+    final result = <ChatMessage>[];
+    for (final doc in snapshot.docs) {
+      _deliveredIds.add(doc.id);
+      result.add(_messageFromDoc(doc));
+    }
+    return result;
+  }
+
+  /// Starts listening for new messages, the other participant's typing
+  /// flag, and reports a connected state (Firestore doesn't have an
+  /// explicit handshake the way a socket does, so this fires true
+  /// immediately and false only if a listener errors out).
+  void connect() {
+    _connectionController.add(true);
+
+    _messagesSub = _messagesRef
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .listen((snapshot) {
+      for (final change in snapshot.docChanges) {
+        if (change.type != DocumentChangeType.added) continue;
+        final doc = change.doc;
+        if (_deliveredIds.contains(doc.id)) continue;
+        _deliveredIds.add(doc.id);
+        _messagesController.add(_messageFromDoc(doc));
       }
+    }, onError: (_) {
+      _connectionController.add(false);
     });
-    _typingSub = _service.typingStatus.listen((typing) {
-      setState(() => _plugIsTyping = typing);
-    });
-    _connSub = _service.connectionStatus.listen((connected) {
-      setState(() => _isConnected = connected);
+
+    _threadSub = _chatRef.snapshots().listen((snapshot) {
+      final data = snapshot.data();
+      if (data == null) return;
+
+      final participants = List<String>.from(data['participants'] ?? []);
+      final otherUid = participants.firstWhere(
+            (id) => id != currentUserId,
+        orElse: () => '',
+      );
+
+      final typingMap = Map<String, dynamic>.from(data['typing'] ?? {});
+      _typingController.add(otherUid.isNotEmpty && typingMap[otherUid] == true);
+    }, onError: (_) {
+      _connectionController.add(false);
     });
   }
 
-  Future<void> _loadHistory() async {
-    final history = await _service.fetchHistory();
-    setState(() {
-      _messages.insertAll(0, history.reversed);
+  /// Sends a message. Uses [message.id] as the Firestore doc id itself,
+  /// so when this same write is echoed back through the live listener,
+  /// it's recognized as already-delivered and never shown twice.
+  Future<void> sendMessage(ChatMessage message) async {
+    _deliveredIds.add(message.id);
+
+    final chatSnapshot = await _chatRef.get();
+    final participants =
+    List<String>.from(chatSnapshot.data()?['participants'] ?? []);
+
+    final batch = _firestore.batch();
+
+    batch.set(_messagesRef.doc(message.id), {
+      'senderUid': message.senderId,
+      'senderName': message.senderName,
+      'content': message.content,
+      'messageType': message.type.name,
+      'mediaUrl': message.mediaUrl,
+      'createdAt': FieldValue.serverTimestamp(),
     });
-    _scrollToBottom(jump: true);
+
+    final chatUpdate = <String, dynamic>{
+      'lastMessage': message.content,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    };
+    for (final uid in participants) {
+      if (uid == currentUserId) continue;
+      chatUpdate['unreadCount.$uid'] = FieldValue.increment(1);
+    }
+    batch.update(_chatRef, chatUpdate);
+
+    await batch.commit();
   }
 
-  void _scrollToBottom({bool jump = false}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      final pos = _scrollController.position.maxScrollExtent;
-      if (jump) {
-        _scrollController.jumpTo(pos);
-      } else {
-        _scrollController.animateTo(
-          pos,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  /// Resets this user's unread badge for the whole chat. Your Firestore
+  /// rules only allow `create` on message docs (no `update`), so this
+  /// can't flip an individual message's status to "read" without adding
+  /// a new rule — it clears the chat-level unread count instead, which
+  /// is what actually drives the badge in the chat list.
+  Future<void> markRead(String messageId) async {
+    await _chatRef.update({'unreadCount.$currentUserId': 0});
   }
 
-  void _handleSend() {
-    final text = _textController.text.trim();
-    if (text.isEmpty) return;
+  /// Writes this user's typing flag onto the shared chat doc; the other
+  /// participant's [connect] listener picks it up via [typingStatus].
+  Future<void> sendTyping(bool isTyping) async {
+    await _chatRef.update({'typing.$currentUserId': isTyping});
+  }
 
-    final message = ChatMessage(
-      id: _uuid.v4(),
-      threadId: widget.thread.id,
-      senderId: widget.currentUserId,
-      senderName: 'You',
-      content: text,
-      timestamp: DateTime.now(),
-      status: MessageStatus.sending,
+  ChatMessage _messageFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? {};
+    final createdAt = data['createdAt'];
+
+    return ChatMessage(
+      id: doc.id,
+      threadId: threadId,
+      senderId: data['senderUid'] ?? '',
+      senderName: data['senderName'] ?? '',
+      content: data['content'] ?? '',
+      type: _typeFromString(data['messageType']),
+      timestamp: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
+      status: MessageStatus.sent,
+      mediaUrl: data['mediaUrl'],
     );
-
-    setState(() => _messages.add(message));
-    _service.sendMessage(message);
-    _textController.clear();
-    _scrollToBottom();
   }
 
-  void _handleTypingChange(String _) {
-    _service.sendTyping(true);
-    _typingDebounce?.cancel();
-    _typingDebounce = Timer(const Duration(seconds: 2), () {
-      _service.sendTyping(false);
-    });
+  static MessageType _typeFromString(String? s) {
+    switch (s) {
+      case 'voiceNote':
+        return MessageType.voiceNote;
+      case 'image':
+        return MessageType.image;
+      case 'workAgreement':
+        return MessageType.workAgreement;
+      case 'system':
+        return MessageType.system;
+      default:
+        return MessageType.text;
+    }
   }
 
-  @override
   void dispose() {
-    _msgSub?.cancel();
-    _typingSub?.cancel();
-    _connSub?.cancel();
-    _typingDebounce?.cancel();
-    _service.dispose();
-    _textController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFECE5DD),
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: widget.thread.plugAvatarUrl != null
-                  ? NetworkImage(widget.thread.plugAvatarUrl!)
-                  : null,
-              child: widget.thread.plugAvatarUrl == null
-                  ? Text(widget.thread.plugName.isNotEmpty
-                      ? widget.thread.plugName[0].toUpperCase()
-                      : '?')
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(widget.thread.plugName,
-                      style: const TextStyle(fontSize: 16)),
-                  Text(
-                    _plugIsTyping
-                        ? 'typing…'
-                        : (_isConnected ? 'online' : 'connecting…'),
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          if (!widget.thread.isConfirmedJob)
-            Container(
-              width: double.infinity,
-              color: Colors.amber.shade100,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: const Text(
-                'Reviews unlock once this job is marked confirmed.',
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isMine = msg.isMine(widget.currentUserId);
-                
-                // INLINE TEXT CHAT BUBBLE LAYOUT
-                return Align(
-                  alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isMine ? const Color(0xFFDCF8C6) : Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(12),
-                        topRight: const Radius.circular(12),
-                        bottomLeft: Radius.circular(isMine ? 12 : 0),
-                        bottomRight: Radius.circular(isMine ? 0 : 12),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      msg.content,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          _ChatInputBar(
-            controller: _textController,
-            onChanged: _handleTypingChange,
-            onSend: _handleSend,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChatInputBar extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onSend;
-
-  const _ChatInputBar({
-    required this.controller,
-    required this.onChanged,
-    required this.onSend,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: controller,
-                  onChanged: onChanged,
-                  minLines: 1,
-                  maxLines: 5,
-                  decoration: const InputDecoration(
-                    hintText: 'Message',
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: Colors.green,
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                onPressed: onSend,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    _messagesSub?.cancel();
+    _threadSub?.cancel();
+    _messagesController.close();
+    _typingController.close();
+    _connectionController.close();
   }
 }
