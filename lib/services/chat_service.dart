@@ -1,221 +1,141 @@
-import 'dart:async';
-import 'dart:convert';
+// lib/services/chat_service.dart
+//
+// Handles sending messages and tracking per-user, per-chat unread counts,
+// WhatsApp-style. Depends only on cloud_firestore + firebase_auth.
+//
+// Firestore structure expected:
+//
+// chats/{chatId}
+//   participants: [uid1, uid2]
+//   otherUserName / participantNames: {} (optional, for display)
+//   lastMessage: string
+//   lastMessageTime: Timestamp
+//   unreadCount: { uid1: 0, uid2: 2 }
+//
+// chats/{chatId}/messages/{messageId}
+//   senderUid: string
+//   text: string
+//   createdAt: Timestamp
 
-import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/chat_message.dart';
-import '../models/chat_thread.dart';
+class ChatService {
+  ChatService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-class ChatConfig {
-  static const String httpBase = 'https://api.urplug.app';
-  static const String wsBase = 'wss://api.urplug.app';
-}
+  CollectionReference<Map<String, dynamic>> get _chats =>
+      _firestore.collection('chats');
 
+  String? get currentUid => _auth.currentUser?.uid;
 
+  /// Creates a chat doc if it doesn't already exist between the two users.
+  /// Returns the chatId. Call this before the first message in a new
+  /// conversation, or reuse an existing chatId if you already track one.
+  Future<String> getOrCreateChat({
+    required String otherUserId,
+    required String otherUserName,
+  }) async {
+    final uid = currentUid;
+    if (uid == null) throw StateError('No authenticated user');
 
-class ChatRoomService {
-  final String threadId;
-  final String authToken;
-  final String currentUserId;
+    // Deterministic chat id so the same pair always maps to the same chat.
+    final ids = [uid, otherUserId]..sort();
+    final chatId = '${ids[0]}_${ids[1]}';
 
-  WebSocketChannel? _channel;
-  final _messageController = StreamController<ChatMessage>.broadcast();
-  final _typingController = StreamController<bool>.broadcast();
-  final _connectionController = StreamController<bool>.broadcast();
+    final chatRef = _chats.doc(chatId);
+    final snapshot = await chatRef.get();
 
-  Timer? _reconnectTimer;
-  bool _manuallyClosed = false;
-  int _retryAttempt = 0;
-
-  ChatRoomService({
-    required this.threadId,
-    required this.authToken,
-    required this.currentUserId,
-  });
-
-  Stream<ChatMessage> get messages => _messageController.stream;
-  Stream<bool> get typingStatus => _typingController.stream;
-  Stream<bool> get connectionStatus => _connectionController.stream;
-
-  void connect() {
-    _manuallyClosed = false;
-    final uri = Uri.parse(
-      '${ChatConfig.wsBase}/ws/chat/$threadId/?token=$authToken',
-    );
-    try {
-      _channel = WebSocketChannel.connect(uri);
-      _connectionController.add(true);
-      _retryAttempt = 0;
-      _channel!.stream.listen(
-        _handleRawEvent,
-        onDone: _handleDisconnect,
-        onError: (_) => _handleDisconnect(),
-      );
-    } catch (_) {
-      _handleDisconnect();
+    if (!snapshot.exists) {
+      await chatRef.set({
+        'participants': ids,
+        'lastMessage': '',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'unreadCount': {ids[0]: 0, ids[1]: 0},
+      });
     }
+
+    return chatId;
   }
 
-  void _handleRawEvent(dynamic raw) {
-    final data = jsonDecode(raw as String) as Map<String, dynamic>;
-    switch (data['type']) {
-      case 'chat_message':
-        _messageController.add(ChatMessage.fromJson(data['message']));
-        break;
-      case 'typing':
-        _typingController.add(data['is_typing'] == true);
-        break;
-      case 'read_receipt':
-        
-        
-        break;
-    }
+  /// Sends a message and increments the recipient's unread count for
+  /// this chat in the same atomic batch.
+  Future<void> sendMessage({
+    required String chatId,
+    required String recipientId,
+    required String text,
+  }) async {
+    final uid = currentUid;
+    if (uid == null) throw StateError('No authenticated user');
+    if (text.trim().isEmpty) return;
+
+    final chatRef = _chats.doc(chatId);
+    final messageRef = chatRef.collection('messages').doc();
+    final batch = _firestore.batch();
+
+    batch.set(messageRef, {
+      'senderUid': uid,
+      'text': text.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.update(chatRef, {
+      'lastMessage': text.trim(),
+      'lastMessageTime': FieldValue.serverTimestamp(),
+      'unreadCount.$recipientId': FieldValue.increment(1),
+    });
+
+    await batch.commit();
   }
 
-  void _handleDisconnect() {
-    _connectionController.add(false);
-    if (_manuallyClosed) return;
-    _retryAttempt++;
-    final delay = Duration(seconds: _retryAttempt.clamp(1, 10));
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, connect);
+  /// Call when the user opens a chat screen to clear their unread badge.
+  Future<void> markChatAsRead(String chatId) async {
+    final uid = currentUid;
+    if (uid == null) return;
+
+    await _chats.doc(chatId).update({
+      'unreadCount.$uid': 0,
+    });
   }
 
-  
-  
-  void sendMessage(ChatMessage message) {
-    _channel?.sink.add(jsonEncode({
-      'type': 'chat_message',
-      'message': message.toJson(),
-    }));
+  /// Stream of the current user's chats, ordered by most recent message.
+  Stream<QuerySnapshot<Map<String, dynamic>>> chatListStream() {
+    final uid = currentUid;
+    if (uid == null) return const Stream.empty();
+
+    return _chats
+        .where('participants', arrayContains: uid)
+        .orderBy('lastMessageTime', descending: true)
+        .snapshots();
   }
 
-  void sendTyping(bool isTyping) {
-    _channel?.sink.add(jsonEncode({
-      'type': 'typing',
-      'is_typing': isTyping,
-    }));
+  /// Stream of messages within a single chat, oldest first.
+  Stream<QuerySnapshot<Map<String, dynamic>>> messagesStream(String chatId) {
+    return _chats
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('createdAt', descending: false)
+        .snapshots();
   }
 
-  void markRead(String messageId) {
-    _channel?.sink.add(jsonEncode({
-      'type': 'read_receipt',
-      'message_id': messageId,
-    }));
-  }
+  /// Total unread count across all of the current user's chats.
+  /// Useful for a single bell-icon badge (e.g. in an app bar).
+  Stream<int> totalUnreadStream() {
+    return chatListStream().map((snapshot) {
+      final uid = currentUid;
+      if (uid == null) return 0;
 
-  Future<List<ChatMessage>> fetchHistory({int page = 1}) async {
-    final res = await http.get(
-      Uri.parse(
-          '${ChatConfig.httpBase}/api/chats/threads/$threadId/messages/?page=$page'),
-      headers: {'Authorization': 'Bearer $authToken'},
-    );
-    if (res.statusCode != 200) return [];
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final results = body['results'] as List<dynamic>? ?? [];
-    return results
-        .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
-        .toList();
-  }
-
-  void dispose() {
-    _manuallyClosed = true;
-    _reconnectTimer?.cancel();
-    _channel?.sink.close();
-    _messageController.close();
-    _typingController.close();
-    _connectionController.close();
-  }
-}
-
-
-
-class InboxService {
-  final String authToken;
-  WebSocketChannel? _channel;
-  final _threadsController = StreamController<List<ChatThread>>.broadcast();
-  final Map<String, ChatThread> _threadsById = {};
-  Timer? _reconnectTimer;
-  bool _manuallyClosed = false;
-  int _retryAttempt = 0;
-
-  InboxService({required this.authToken});
-
-  Stream<List<ChatThread>> get threads => _threadsController.stream;
-
-  Future<void> start() async {
-    await _loadInitial();
-    _connectLive();
-  }
-
-  Future<void> _loadInitial() async {
-    final res = await http.get(
-      Uri.parse('${ChatConfig.httpBase}/api/chats/threads/'),
-      headers: {'Authorization': 'Bearer $authToken'},
-    );
-    if (res.statusCode == 200) {
-      final body = jsonDecode(res.body) as List<dynamic>;
-      _threadsById.clear();
-      for (final t in body) {
-        final thread = ChatThread.fromJson(t as Map<String, dynamic>);
-        _threadsById[thread.id] = thread;
+      var total = 0;
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final unreadMap = Map<String, dynamic>.from(data['unreadCount'] ?? {});
+        total += (unreadMap[uid] as int?) ?? 0;
       }
-      _emitSorted();
-    }
-  }
-
-  void _connectLive() {
-    _manuallyClosed = false;
-    final uri =
-        Uri.parse('${ChatConfig.wsBase}/ws/inbox/?token=$authToken');
-    try {
-      _channel = WebSocketChannel.connect(uri);
-      _retryAttempt = 0;
-      _channel!.stream.listen(
-        _handleEvent,
-        onDone: _handleDisconnect,
-        onError: (_) => _handleDisconnect(),
-      );
-    } catch (_) {
-      _handleDisconnect();
-    }
-  }
-
-  void _handleEvent(dynamic raw) {
-    final data = jsonDecode(raw as String) as Map<String, dynamic>;
-    switch (data['type']) {
-      case 'thread_update':
-        final thread = ChatThread.fromJson(data['thread']);
-        _threadsById[thread.id] = thread;
-        _emitSorted();
-        break;
-      case 'thread_removed':
-        _threadsById.remove(data['thread_id'].toString());
-        _emitSorted();
-        break;
-    }
-  }
-
-  void _handleDisconnect() {
-    if (_manuallyClosed) return;
-    _retryAttempt++;
-    final delay = Duration(seconds: _retryAttempt.clamp(1, 10));
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, _connectLive);
-  }
-
-  void _emitSorted() {
-    final list = _threadsById.values.toList()
-      ..sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
-    _threadsController.add(list);
-  }
-
-  void dispose() {
-    _manuallyClosed = true;
-    _reconnectTimer?.cancel();
-    _channel?.sink.close();
-    _threadsController.close();
+      return total;
+    });
   }
 }

@@ -61,8 +61,12 @@ class MessagesScreen extends StatelessWidget {
               final String otherUid =
               participants.firstWhere((p) => p != myUid, orElse: () => '');
 
-              final unreadCounts = data['unreadCounts'] as Map<String, dynamic>?;
-              final int unread = (unreadCounts?[myUid] as num?)?.toInt() ?? 0;
+              // Field name is 'unreadCount' (singular) on the chat doc —
+              // matches what customer_chat_screen.dart and every other
+              // write path use. 'unreadCounts' (plural) never existed,
+              // which is why the badge never showed up.
+              final unreadCount = data['unreadCount'] as Map<String, dynamic>?;
+              final int unread = (unreadCount?[myUid] as num?)?.toInt() ?? 0;
               final bool hasUnread = unread > 0;
 
               return FutureBuilder<DocumentSnapshot>(
@@ -100,18 +104,18 @@ class MessagesScreen extends StatelessWidget {
                       ),
                       trailing: hasUnread
                           ? Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.accentRedOrange,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              constraints: const BoxConstraints(minWidth: 20),
-                              child: Text(
-                                unread > 99 ? '99+' : '$unread',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                              ),
-                            )
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentRedOrange,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        constraints: const BoxConstraints(minWidth: 20),
+                        child: Text(
+                          unread > 99 ? '99+' : '$unread',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      )
                           : const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                       onTap: () {
                         Navigator.push(

@@ -37,8 +37,6 @@ class MatchingService {
     ],
   };
 
-  // Kept separate from serviceKeywords so it never outscores a more specific
-  // trade — it's only checked if nothing else matches at all.
   final List<String> handymanKeywords = ["repair", "fix", "maintenance", "general"];
 
   /// Scores every category by how many of its keywords appear in the
