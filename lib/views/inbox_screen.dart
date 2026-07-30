@@ -1,175 +1,114 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/chat_thread.dart';
-import '../services/chat_service.dart';
-import 'customer_dashboard/customer_chat_screen.dart';
+import 'customer_dashboard/customer_chat_screen.dart'; // customer_chat_screen.dart — adjust path if it lives elsewhere
 
-class InboxScreen extends StatefulWidget {
-  final String authToken;
-  final String currentUserId;
+class CustomerInboxScreen extends StatelessWidget {
+  const CustomerInboxScreen({super.key});
 
-  const InboxScreen({
-    super.key,
-    required this.authToken,
-    required this.currentUserId,
-  });
-
-  @override
-  State<InboxScreen> createState() => _InboxScreenState();
-}
-
-class _InboxScreenState extends State<InboxScreen> {
-  late final InboxService _inboxService;
-
-  @override
-  void initState() {
-    super.initState();
-    _inboxService = InboxService(authToken: widget.authToken);
-    _inboxService.start();
-  }
-
-  @override
-  void dispose() {
-    _inboxService.dispose();
-    super.dispose();
-  }
+  static const Color brandPrimary = Color(0xFF005F73);
+  static const Color brandSecondary = Color(0xFF0A9396);
+  static const Color screenBackground = Color(0xFFE0F2F1);
 
   @override
   Widget build(BuildContext context) {
+    final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
-      body: StreamBuilder<List<ChatThread>>(
-        stream: _inboxService.threads,
+      backgroundColor: screenBackground,
+      appBar: AppBar(
+        title: const Text('Messages', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: brandPrimary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('chats')
+            .where('participants', arrayContains: myUid)
+            .orderBy('lastMessageTime', descending: true)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final threads = snapshot.data!;
-          if (threads.isEmpty) {
-            return const Center(
-              child: Text(
-                'No conversations yet.\nMatch with a plug to start chatting.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
-              ),
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)),
             );
           }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: brandPrimary));
+          }
+
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text('No conversations yet', style: TextStyle(color: Colors.grey)),
+            );
+          }
+
           return ListView.separated(
-            itemCount: threads.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, indent: 76),
-            itemBuilder: (context, index) => _ThreadTile(
-              thread: threads[index],
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    providerUid: threads[index].plugId,
-                    providerName: threads[index].plugName,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+
+              final providerUid = data['providerUid'] as String? ?? '';
+              final providerName = data['providerName'] as String? ?? 'Provider';
+              final lastMessage = data['lastMessage'] as String? ?? '';
+
+              final unreadMap = Map<String, dynamic>.from(data['unreadCount'] ?? {});
+              final unread = (unreadMap[myUid] as int?) ?? 0;
+
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFFE0F2F1),
+                  child: Text(
+                    providerName.isNotEmpty ? providerName[0].toUpperCase() : '?',
+                    style: const TextStyle(color: brandPrimary, fontWeight: FontWeight.bold),
                   ),
                 ),
-              ),
-            ),
+                title: Text(
+                  providerName,
+                  style: TextStyle(
+                    fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                subtitle: Text(
+                  lastMessage,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: unread > 0 ? FontWeight.bold : FontWeight.normal,
+                    color: unread > 0 ? Colors.black87 : Colors.grey[600],
+                  ),
+                ),
+                trailing: unread > 0
+                    ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: brandSecondary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$unread',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                )
+                    : null,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(providerUid: providerUid, providerName: providerName),
+                    ),
+                  );
+                },
+              );
+            },
           );
         },
       ),
     );
-  }
-}
-
-class _ThreadTile extends StatelessWidget {
-  final ChatThread thread;
-  final VoidCallback onTap;
-
-  const _ThreadTile({required this.thread, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final hasUnread = thread.unreadCount > 0;
-    return ListTile(
-      onTap: onTap,
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: thread.plugAvatarUrl != null
-                ? NetworkImage(thread.plugAvatarUrl!)
-                : null,
-            child: thread.plugAvatarUrl == null
-                ? Text(thread.plugName.isNotEmpty
-                    ? thread.plugName[0].toUpperCase()
-                    : '?')
-                : null,
-          ),
-          if (thread.isOnline)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
-        ],
-      ),
-      title: Text(
-        thread.plugName,
-        style: TextStyle(
-          fontWeight: hasUnread ? FontWeight.bold : FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        thread.lastMessage,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: hasUnread ? Colors.black87 : Colors.black54,
-          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _formatTime(thread.lastMessageTime),
-            style: TextStyle(
-              fontSize: 12,
-              color: hasUnread ? Colors.green : Colors.black45,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (hasUnread)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${thread.unreadCount}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            )
-          else if (thread.isConfirmedJob)
-            const Icon(Icons.verified, size: 16, color: Colors.blueGrey),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final isToday = now.year == time.year &&
-        now.month == time.month &&
-        now.day == time.day;
-    return isToday
-        ? DateFormat('HH:mm').format(time)
-        : DateFormat('d MMM').format(time);
   }
 }

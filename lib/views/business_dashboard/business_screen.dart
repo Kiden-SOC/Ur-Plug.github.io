@@ -212,8 +212,12 @@ class _OverviewTab extends StatelessWidget {
         .map((snapshot) {
       int total = 0;
       for (final doc in snapshot.docs) {
-        final unreadCounts = doc.data()['unreadCounts'] as Map<String, dynamic>?;
-        total += (unreadCounts?[myUid] as num?)?.toInt() ?? 0;
+        // Field is 'unreadCount' (singular) on the chat doc — matches
+        // every write path (customer_chat_screen.dart, provider_chat_screen.dart)
+        // and the messages_screen.dart inbox tile. 'unreadCounts' never existed,
+        // so this always summed to 0 before.
+        final unreadCount = doc.data()['unreadCount'] as Map<String, dynamic>?;
+        total += (unreadCount?[myUid] as num?)?.toInt() ?? 0;
       }
       return total;
     });
@@ -276,7 +280,7 @@ class _OverviewTab extends StatelessWidget {
                 // The Messages badge used to come from controller.unreadMessageCount,
                 // which is fed by the Django chat-threads API. That backend isn't
                 // built yet, so this reads live from Firestore instead — the same
-                // 'chats' collection the actual chat screens write unreadCounts to.
+                // 'chats' collection the actual chat screens write unreadCount to.
                 stream: _unreadMessageStream(),
                 builder: (context, snapshot) {
                   return _ActionTile(
