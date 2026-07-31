@@ -20,6 +20,34 @@
       opacity: 1 !important;
       font-weight: 700 !important;
     }
+    
+    /* Modern, clean layout utilities for media alignment scaled for short text paragraphs */
+    .media-split-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 30px;
+      margin-top: 15px;
+    }
+    
+    .media-split-text {
+      flex: 1 1 350px;
+    }
+    
+    .media-split-image {
+      flex: 0 0 180px; /* Locked to match the compact dimensions requested */
+      display: flex;
+      justify-content: center;
+    }
+
+    .media-split-image img {
+      width: 100%;
+      height: auto;
+      max-width: 180px !important; /* Compact scaling prevents the app view from blowing up */
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 
@@ -28,17 +56,14 @@
   <div class="content-container">
     <!-------------------------------------------------------------------------------------------->
     <!--Start Header-->
-    <div class="banner" style="background: url('img/dummy-background.jpeg') no-repeat center; background-size: cover; height: 300px;"></div>
+    <div class="banner" style="background: url('img/logo.png') no-repeat center; background-size: cover; height: 300px;"></div>
     <div class="banner">
       <div class="banner-table flex-column">
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 class="add-top-margin-small">This is the header area</h2>
+             <h2 class="add-top-margin-small">Ur Plug &mdash; Making Service Discovery Easier</h2>
             <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, <a href="javascript:void(0)">sem quam semper libero</a>, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
+              Right now in Uganda, finding someone reliable to fix a pipe, wire a house, or decorate an event usually depends on word of mouth or endless scrolling through social media. We built Ur Plug to change that. The app provides a centralized platform that accommodates both formal businesses and informal, small-scale service providers, giving them an affordable way to be discovered online. At the same time, it gives consumers a smart recommendation system and a built-in messaging setup to chat with providers safely before making an agreement.
             </p>
           </div>
         </div>
@@ -50,10 +75,7 @@
       <div class="content-table flex-column">
         <!-------------------------------------------------------------------------------------------->
         <!--Start Intro-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <img class="image" src="img/dummay-img.png">
-          </div>
+        <div class="flex-row"></div>
           <div class="flex-item flex-column">
             <p class="text text-large">
               <a target="_blank" href="javascript:void(0)">https://github.com/Kiden-SOC</a>, KIDEN SARAH RUTH LUBANG<br>
@@ -72,1030 +94,458 @@
         <div class="flex-row">
           <div class="flex-item flex-column">
             <p class="text add-top-margin">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae
-              sapien ut libero venenatis faucibus. Nullam quis ante.
+              Ur Plug brings customers and reliable local service providers together in one place. By using simple search tools and an easy-to-use interface, we make it simple for businesses and clients to connect and chat safely.
             </p>
             <h3>Table of Content</h3>
+             <p>
+              View our project repository on <a target="_blank" href="https://github.com/Kiden-SOC/Ur-Plug.github.io">GitHub</a>.
+            </p>
             <ul>
-              <li><a href="#text-only">Text Only</a></li>
-              <li><a href="#buttons-and-inputs">Buttons and Inputs</a></li>
-              <li><a href="#images-and-image-button">Images and Image Button</a></li>
-              <li><a href="#text-around-image">Text around Image</a></li>
-              <li><a href="#centered-image-and-table">Centered Image and Table</a></li>
-              <li><a href="#adaptive-image">Adaptive Image</a></li>
-              <li><a href="#text-with-images-and-videos">Text with Images and Videos</a></li>
-              <li><a href="#iframe">Iframe</a></li>
-              <li><a href="#list-of-projects">List of Projects</a></li>
-              <li><a href="#gallery">Gallery (responsive size)</a></li>
-              <li><a href="#masonry">Masonry (responsive size)</a></li>
-              <li><a href="#survey">Survey</a></li>
+              <li><a href="#customer-signup">Customer Signup Screen</a></li>
+              <li><a href="#business-signup">Business Signup Screen</a></li>
+              <li><a href="#login-screen">Login Screen</a></li>
+              <li><a href="#customer-dashboard">Customer Dashboard</a></li>
+              <li><a href="#business-dashboard">Business Dashboard</a></li>
+              <li><a href="#admin-dashboard">Admin Dashboard</a></li>
+              <li><a href="#request-service">Request Service Screen</a></li>
+              <li><a href="#chat-screen">Chat Screen</a></li>
+              <li><a href="#application-interaction">Application Interaction</a></li>
+              <li><a href="#project-milestones">Project Milestones</a></li>
             </ul>
           </div>
         </div>
         <!--End Intro-->
         <!-------------------------------------------------------------------------------------------->
-        <!--Start Text Only-->
+        <!--Start Customer Signup Screen-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="text-only">Text Only</h2>
+            <h2 id="customer-signup">Customer Signup Screen</h2>
             <hr>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <p class="text">
-              Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur,
-              vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? At vero eos et accusamus et iusto odio dignissimos
-              ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias
-              excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia
-              animi, id est laborum et dolorum fuga.
-            </p>
-            <h3>Break Long URL</h3>
-            <p class="text">
-              <a class="break-long-url" target="_blank" href="https://www.google.com/maps/place/Carnegie+Mellon+University/@40.4430576,-79.9431263,17z/data=!4m5!3m4!1s0x8834f21f58679a9f:0x88716b461fc4daf4!8m2!3d40.4428753!4d-79.9430922">https://www.google.com/maps/place/Carnegie+Mellon+University/@40.4430576,-79.9431263,17z/data=!4m5!3m4!1s0x8834f21f58679a9f:0x88716b461fc4daf4!8m2!3d40.4428753!4d-79.9430922</a>
-            </p>
-            <h3>Nested List</h3>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, <a target="_blank" href="javascript:void(0)">sit amet adipiscing sem neque</a> sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-            <ul>
-              <li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</li>
-              <li>Aenean commodo ligula eget dolor.
-                <ul>
-                  <li>Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.</li>
-                  <li>In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo.
-                    <ul>
-                      <li>Li nov <a target="_blank" href="javascript:void(0)">lingua franca</a>.</li>
-                      <li>It va esser Occidental.</li>
-                      <li>Existent Europan lingues.</li>
-                    </ul>
-                  </li>
-                  <li>Nullam dictum felis eu pede mollis pretium.</li>
-                </ul>
-              </li>
-              <li>Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. </li>
-            </ul>
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-              It va esser tam simplic quam Occidental in fact, it va esser Occidental. A un Angleso it va semblar un
-              simplificat Angles, quam un skeptic Cambridge amico dit me.
-            </p>
-            <ol class="nested">
-              <li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</li>
-              <li>Aenean commodo ligula eget dolor.
-                <ol class="nested">
-                  <li>Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.</li>
-                  <li>In enim justo, <a target="_blank" href="javascript:void(0)">rhoncus ut, imperdiet a</a>, venenatis vitae, justo.
-                    <ol class="nested">
-                      <li>Li nov lingua franca.</li>
-                      <li>It va esser Occidental.</li>
-                      <li>Existent Europan lingues.</li>
-                    </ol>
-                  </li>
-                  <li>Nullam dictum felis eu pede mollis pretium.</li>
-                </ol>
-              </li>
-              <li>Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. </li>
-            </ol>
-            <h3>List with Customized Reverse Numbering</h3>
-            <ol class="publication C-list">
-              <li>
-                <p class="text-small-margin">
-                  Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-                  augue. Curabitur ullamcorper ultricies nisi.
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  The customer signup process allows users to quickly create an account using their phone number, email address and district. This profile lets them search for nearby service providers, view ratings, and safely message the service providers.
                 </p>
-              </li>
-              <li>
-                <p class="text-small-margin">
-                  Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-                  condimentum rhoncus, sem quam semper libero, <a target="_blank" href="javascript:void(0)">sit amet adipiscing sem neque sed ipsum</a>. Nam quam nunc, blandit
-                  vel, luctus pulvinar, hendrerit id, lorem.
+              </div>
+              <div class="media-split-image">
+                <!-- IMAGES PLACEHOLDER: Save your friend's customer signup screenshot as "customer-signup.png" inside the "img" folder -->
+                <img class="image center" src="img/customersignup.png" alt="Customer Signup Screen" style="max-width: 180px !important;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--End Customer Signup Screen-->
+
+
+        <!-------------------------------------------------------------------------------------------->
+
+        <!--Start Business Signup Screen-->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <h2 id="business-signup">Business Signup Screen</h2>
+            <hr>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  The business signup flow captures key operational details for service providers. Providers can list their services, location and contact information.
                 </p>
-              </li>
-              <li>
-                <p class="text-small-margin">
-                  Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-                  coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
+              </div>
+              <div class="media-split-image">
+                <!-- IMAGES PLACEHOLDER: Save your friend's business signup screenshot as "business-signup.png" inside the "img" folder -->
+                <img class="image center" src="img/businesssignup.png" alt="Business Signup Screen" style="max-width: 180px !important;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--End Business Signup Screen-->
+        <!-------------------------------------------------------------------------------------------->
+        <!--Start Login Screen Section-->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <h2 id="login-screen">Login Screen</h2>
+            <hr>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  The login screen provides a secure entry point for all users. Customers and service providers can log in quickly using their registered credentials to access their specific system settings and tools.
                 </p>
-              </li>
-            </ol>
-            <h3>Math Equations</h3>
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-            </p>
-            <img class="image center" src="https://latex.codecogs.com/svg.latex?C\cdot(3\sin\theta_1+3\sin\theta_2-\cos\theta_1-\cos\theta_2)" style="max-width: 300px;">
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-            </p>
+              </div>
+              <div class="media-split-image">
+                <!-- IMAGES PLACEHOLDER: Save your friend's login screenshot as "login-screen.png" inside the "img" folder -->
+                <img class="image center" src="img/login.png" alt="Ur Plug Login Screen" style="max-width: 180px !important;">
+              </div>
+            </div>
           </div>
         </div>
-        <!--End Text Only-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Buttons-->
+        <!--End Login Screen Section-->
+
+               <!--Start Dashboards Section-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="buttons-and-inputs">Buttons and Inputs</h2>
+            <h2 id="customer-dashboard">App Dashboards</h2>
+            <!-- Note: We use "customer-dashboard" as the ID here so your menu anchor links directly to this visual dashboard zone -->
             <hr>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <div class="control-group">
-              <button class="custom-button">Default</button>
-              <button class="custom-button custom-button-primary">Primary</button>
-              <button class="custom-button custom-button-danger">Danger</button>
-              <button class="custom-button custom-button-info">Info</button>
-              <button class="custom-button" disabled>Disabled</button>
-              <a class="custom-button" target="_blank" href="https://github.com/yenchiah/project-website-template" target="_blank">Hyperlink</a>
-              <button class="custom-button custom-button-primary stretch-on-mobile">Stretch on Mobile</button>
-            </div>
-            <div class="control-group">
-              <button class="custom-button pulse-black">Pulse</button>
-              <button class="custom-button custom-button-primary pulse-primary">Pulse</button>
-              <button class="custom-button custom-button-danger pulse-danger">Pulse</button>
-              <button class="custom-button custom-button-info pulse-info">Pulse</button>
-            </div>
-            <div class="control-group">
-              <button class="custom-button-flat"><img src="img/home.png"></button>
-              <button class="custom-button-flat" disabled><img src="img/home.png"></button>
-              <button class="custom-button-flat small"><img src="img/home.png"></button>
-              <button class="custom-button-flat large"><img src="img/home.png"></button>
-            </div>
-            <div class="control-group">
-              <button class="custom-button-flat"><img src="img/calendar.png"></button>
-              <button class="custom-button-flat"><img src="img/play.png"></button>
-              <button class="custom-button-flat"><img src="img/pause.png"></button>
-              <button class="custom-button-flat"><img src="img/stop.png"></button>
-              <button class="custom-button-flat"><img src="img/terrain.png"></button>
-              <button class="custom-button-flat"><img src="img/close.png"></button>
-              <button class="custom-button-flat"><img src="img/collection.png"></button>
-              <button class="custom-button-flat"><img src="img/next.png"></button>
-              <button class="custom-button-flat"><img src="img/back.png"></button>
-              <button class="custom-button-flat"><img src="img/setting.png"></button>
-              <button class="custom-button-flat"><img src="img/book.png"></button>
-              <button class="custom-button-flat"><img src="img/user.png"></button>
-              <button class="custom-button-flat"><img src="img/share.png"></button>
-              <button class="custom-button-flat"><img src="img/submit.png"></button>
-              <a class="custom-button-flat" href="https://github.com/yenchiah/project-website-template" target="_blank">
-                <img src="img/link.png">
-              </a>
-            </div>
-            <div class="control-group">
-              <button class="custom-button-flat"><img src="img/home.png"><span>Home</span></button>
-              <button class="custom-button-flat" disabled><img src="img/home.png"><span>Disabled</span></button>
-              <button class="custom-button-flat small"><img src="img/home.png"><span>Small</span></button>
-              <button class="custom-button-flat large"><img src="img/home.png"><span>Large</span></button>
-            </div>
-            <div class="control-group">
-              <button class="custom-button-flat"><img src="img/calendar.png"><span>Calendar</span></button>
-              <button class="custom-button-flat"><img src="img/play.png"><span>Play</span></button>
-              <button class="custom-button-flat"><img src="img/stop.png"><span>Stop</span></button>
-              <button class="custom-button-flat"><img src="img/terrain.png"><span>Terrain</span></button>
-              <button class="custom-button-flat"><img src="img/close.png"><span>Close</span></button>
-              <button class="custom-button-flat"><img src="img/collection.png"><span>Collection</span></button>
-              <button class="custom-button-flat"><img src="img/next.png"><span>Next</span></button>
-              <button class="custom-button-flat"><img src="img/back.png"><span>Back</span></button>
-              <button class="custom-button-flat"><img src="img/setting.png"><span>Setting</span></button>
-              <button class="custom-button-flat"><img src="img/book.png"><span>Tutorial</span></button>
-              <button class="custom-button-flat"><img src="img/user.png"><span>User</span></button>
-              <button class="custom-button-flat"><img src="img/share.png"><span>Share</span></button>
-              <button class="custom-button-flat"><img src="img/submit.png"><span>Submit</span></button>
-              <a class="custom-button-flat" href="https://github.com/yenchiah/project-website-template" target="_blank">
-                <img src="img/link.png"><span>Hyperlink</span>
-              </a>
-              <button class="custom-button-flat stretch-on-mobile"><img src="img/play.png"><span>Stretch on Mobile</span></button>
-            </div>
-            <div class="control-group">
-              <button class="custom-button-flat pulse-black"><img src="img/home.png"><span>Pulse</span></button>
-              <button class="custom-button-flat pulse-primary"><img src="img/home.png"><span>Pulse</span></button>
-              <button class="custom-button-flat pulse-danger"><img src="img/home.png"><span>Pulse</span></button>
-              <button class="custom-button-flat pulse-info"><img src="img/home.png"><span>Pulse</span></button>
-            </div>
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-              It va esser tam simplic quam Occidental in fact, it va esser Occidental. A un Angleso it va semblar un
-              simplificat Angles, quam un skeptic Cambridge amico dit me.
-            </p>
-          </div>
-        </div>
-        <div class="flex-row-space-between">
-          <div class="flex-item flex-column">
-            <p class="text badge-text">Large Badge Caption!</p>
-          </div>
-          <div class="flex-item flex-column">
-            <div class="control-group">
-              <a href="javascript:void(0)" target="_blank" class="custom-image-button">
-                <img src="img/app-store-badge.png" width="150">
-              </a>
-              <a href="javascript:void(0)" target="_blank" class="custom-image-button">
-                <img src="img/google-play-badge.png" width="150">
-              </a>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  Ur Plug features custom dashboard designs tailored for both customers and professional providers. These interfaces offer instant access to booking histories, active job notifications, and account details.
+                </p>
+              </div>
+              <div class="media-split-text" style="flex: 2 1 600px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                <!-- Side-by-Side Dashboard Previews -->
+                <div style="flex: 1 1 250px; text-align: center;">
+                  <!-- DASHBOARD PLACEHOLDER 1: Save your friend's screenshot as "customer-dashboard.png" in the "img" folder -->
+                  <img class="image" src="img/customerdashboard.png" alt="Customer Dashboard Screen" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  <p class="image-caption" style="margin-top: 5px;">Customer Dashboard Interface</p>
+                </div>
+                <div style="flex: 1 1 250px; text-align: center;">
+                  <!-- DASHBOARD PLACEHOLDER 2: Save your friend's screenshot as "business-dashboard.png" in the "img" folder -->
+                  <!-- We add the business-dashboard ID here so clicking the link scrolls directly to this side of the row -->
+                  <img class="image" src="img/providerdashboard.png" alt="Business Dashboard Screen" id="business-dashboard" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  <p class="image-caption" style="margin-top: 5px;">Business Dashboard Interface</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <div class="control-group">
-              <input class="custom-textbox stretch-on-mobile" type="text" placeholder="e.g., 15213">
-              <textarea class="custom-textbox stretch-on-mobile" placeholder="e.g., 15213"></textarea>
-            </div>
-            <div class="control-group">
-              <input class="custom-textbox stretch-on-mobile" value="https://yenchiah.me/" type="text" readonly>
-              <textarea class="custom-textbox stretch-on-mobile" readonly>Phasellus viverra nulla ut metus varius laoreet.</textarea>
-            </div>
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-              It va esser tam simplic quam Occidental in fact, it va esser Occidental. A un Angleso it va semblar un
-              simplificat Angles, quam un skeptic Cambridge amico dit me.
-            </p>
-          </div>
-        </div>
-        <!--End Text with Buttons-->
+        <!--End Dashboards Section-->
+
         <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Images and Image buttons-->
+
+        <!--Start Request Service Section-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="images-and-image-button">Images and Image Button</h2>
+            <h2 id="request-service">Request Service Screen</h2>
             <hr>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  The Service Request screen simplifies how customers can obtain services from the providers. They easily type where they want the service, when they need it and describe what it is that they exactly need by providing brief notes.
+                </p>
+                <p class="text">
+                  Providers instantly receive a notification with these structural details, allowing them to review the scope of work and determine if they are available before any commitment is made.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- REQUEST SERVICE PLACEHOLDER: Save your friend's screenshot as "request-service.png" in the "img" folder -->
+                <img class="image center" src="img/requestservice.png" alt="Request Service Layout" style="max-width: 180px !important;">
+              </div>
+            </div>
           </div>
         </div>
-        <div class="flex-row-space-between">
-          <div class="flex-item flex-column">
-            <img class="image max-width-400" src="img/dummay-img.png">
-            <p class="image-caption">Image Caption</p>
-          </div>
-          <div class="flex-item flex-column">
-            <a href="https://github.com/yenchiah/project-website-template" target="_blank" class="image max-width-400">
-              <img src="img/dummay-img.png">
-            </a>
-            <p class="image-caption">Image Button Caption</p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-          </div>
-        </div>
-        <!--End Text with Images and Image buttons-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Text around Image-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="text-around-image">Text around Image</h2>
-            <hr>
-            <p class="text">
-              <img class="image image-wrap-text max-width-400" src="img/dummay-img.png">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem
-              aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-              Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni
-              dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit
-              amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam
-              aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit
-              laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea
-              voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla
-              pariatur? At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum
-              deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident,
-              similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem
-              rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil
-              impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis.
-            </p>
-          </div>
-        </div>
-        <!--End Text around Image-->
-        <!-------------------------------------------------------------------------------------------->
-      </div>
+        <!--End Request Service Section-->
+
+       <!-------------------------------------------------------------------------------------------->
+              </div>
     </div>
-    <div class="banner" style="background: url('img/dummy-background.jpeg') no-repeat center; background-size: cover; height: 500px;">
-      <div class="banner-table flex-column" style="background-color: rgba(0, 0, 0, 0.5);">
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 class="add-top-margin-small">This is the banner area with photo</h2>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur <a href="javascript:void(0)">ullamcorper ultricies nisi</a>. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    
     <div class="content">
       <div class="content-table flex-column">
         <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Centered Image and Table-->
+        <!--Start Chat Screen Section-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="centered-image-and-table" class="no-top-margin">Centered Image and Table</h2>
+            <h2 id="chat-screen" class="no-top-margin">In-App Chat Screen</h2>
             <hr>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <p class="text text-center graph-title">
-              This image does not scroll and only scale.
-            </p>
-            <img class="image center max-width-400 add-top-margin-small" src="img/dummay-img.png">
-            <p class="text text-center graph-title">
-              This image scrolls on mobile with a fixed height.
-            </p>
-            <div class="scrollable-image-container center add-top-margin-small">
-              <img class="scrollable-image center" src="img/dummay-img.png">
+            <div class="media-split-container" style="align-items: flex-start;">
+              <div class="media-split-text">
+                <p class="text">
+                  Our integrated chat layout supports coversations between the customers and service providers where they can talk about prices and urgency of the service. This allows the customers to thoroughly detail their maintenance situations before finalizing an assignment.
+                </p>
+              </div>
+              <div class="media-split-text" style="flex: 2 1 600px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                <div style="flex: 1 1 250px; text-align: center;">
+                  <p class="text text-center graph-title" style="margin-bottom: 8px;">
+                    Customer Chat Layout Preview
+                  </p>
+                  <!-- CHAT PLACEHOLDER 1: Save customer chat view screenshot as "customer-chat.png" in the "img" folder -->
+                  <img class="image center" src="img/customerchat.png" alt="Customer Chat View" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                </div>
+                <div style="flex: 1 1 250px; text-align: center;">
+                  <p class="text text-center graph-title" style="margin-bottom: 8px;">
+                    Business Chat Layout Preview
+                  </p>
+                  <!-- CHAT PLACEHOLDER 2: Save business chat view screenshot as "business-chat.png" in the "img" folder -->
+                  <div class="scrollable-image-container center" style="width: 100%; max-width: 160px !important; margin: 0 auto;">
+                    <img class="scrollable-image center" src="img/businesschat.png" alt="Business Chat View" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  </div>
+                </div>
+              </div>
             </div>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <p class="text text-center graph-title">
-              This is the title for the bottom scrollable table.
-            </p>
-            <div class="custom-table-container center add-top-margin-small">
-              <table class="custom-table">
-                <thead>
-                  <tr class="bg-color-gray">
-                    <th>Number of</th>
-                    <th class="text-center">Unique Users</th>
-                    <th class="text-center">Smell Reports</th>
-                    <th class="text-center">Interaction Events</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Enthusiasts</td>
-                    <td class="text-center">9.4%</td>
-                    <td class="text-center">50.6%</td>
-                    <td class="text-center">44.8%</td>
-                  </tr>
-                  <tr class="bg-color-light-gray">
-                    <td>Explorers</td>
-                    <td class="text-center">36.1%</td>
-                    <td class="text-center">37.3%</td>
-                    <td class="text-center">27.3%</td>
-                  </tr>
-                  <tr>
-                    <td>Contributors</td>
-                    <td class="text-center">13.0%</td>
-                    <td class="text-center">12.1%</td>
-                    <td class="text-center">n/a</td>
-                  </tr>
-                  <tr class="bg-color-light-gray">
-                    <td>Observers</td>
-                    <td class="text-center">41.6%</td>
-                    <td class="text-center">n/a</td>
-                    <td class="text-center">27.9%</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td>Size (N)</td>
-                    <td class="text-center">2,237</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">79,447</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <p class="text text-center graph-title">
-              This is the title for the bottom very long scrollable table.
-            </p>
-            <div class="custom-table-container center add-top-margin-small">
-              <table class="custom-table">
-                <thead>
-                  <tr class="bg-color-gray">
-                    <th class="text-center">Smell Rating</th>
-                    <th class="text-center">2019</th>
-                    <th class="text-center">2018</th>
-                    <th class="text-center">2017</th>
-                    <th class="text-center">2016</th>
-                    <th class="text-center">2015</th>
-                    <th class="text-center">2014</th>
-                    <th class="text-center">2013</th>
-                    <th class="text-center">2012</th>
-                    <th class="text-center">2011</th>
-                    <th class="text-center">2010</th>
-                    <th class="text-center">2009</th>
-                    <th class="text-center">2008</th>
-                    <th class="text-center">2007</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="text-center">1</td>
-                    <td class="text-center">1,711 (9.5%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                    <td class="text-center">1,199 (13.0%)</td>
-                    <td class="text-center">1,658 (20.4%)</td>
-                  </tr>
-                  <tr class="bg-color-light-gray">
-                    <td class="text-center">2</td>
-                    <td class="text-center">798 (4.4%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                    <td class="text-center">497 (5.4%)</td>
-                    <td class="text-center">665 (8.2%)</td>
-                  </tr>
-                  <tr>
-                    <td class="text-center">3</td>
-                    <td class="text-center">4,305 (23.9%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                    <td class="text-center">2,649 (28.8%)</td>
-                    <td class="text-center">2,246 (27.7%)</td>
-                  </tr>
-                  <tr class="bg-color-light-gray">
-                    <td class="text-center">4</td>
-                    <td class="text-center">5,804 (32.3%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                    <td class="text-center">2,932 (31.9%)</td>
-                    <td class="text-center">2,171 (26.8%)</td>
-                  </tr>
-                  <tr>
-                    <td class="text-center">5</td>
-                    <td class="text-center">5,356 (29.8%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                    <td class="text-center">1,918 (20.9%)</td>
-                    <td class="text-center">1,372 (16.9%)</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td class="text-center">Sum</td>
-                    <td class="text-center">17,974</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                    <td class="text-center">9,195</td>
-                    <td class="text-center">8,112</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
           </div>
         </div>
-        <!--End Text with Centered Image and Table-->
+        <!--End Chat Screen Section-->
+        
         <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Adaptive Image-->
+        <!--Start Admin Dashboard Section-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="adaptive-image">Adaptive Image</h2>
+            <h2 id="admin-dashboard">Admin Dashboard</h2>
             <hr>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-            <a class="image adaptive-image" style="background-image: url('img/dummay-img-long.png'); min-height: 150px;" href="img/dummay-img-long.png" target="_blank"></a>
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  The internal admin panel provides system administrators with real-time insight into marketplace interactions, user growth rates, and account validation verification reports across the app.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- REQUEST SERVICE PLACEHOLDER: Save your friend's screenshot as "request-service.png" in the "img" folder -->
+                <img class="image center" src="img/admindashboard.png" alt="Admin Dashboard" style="max-width: 180px !important;">
+              </div>
+            </div>
           </div>
         </div>
-        <!--End Text with Adaptive Image-->
+        
         <!-------------------------------------------------------------------------------------------->
+        <!--Start Provider Profile & Account Details Section-->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <!-- We tie an ID here to handle the final account elements from your checklist -->
+            <h2 id="account-details">Provider Account Details</h2>
+            <hr>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  Service providers can completely configure their digital storefront profiles through their account settings. This includes modifying service listings, editing geographic locations, and updating their bio details.
+                </p>
+                <p class="text">
+                  All profile updates undergo instant structural validations to ensure that data remains consistent across client searches, guaranteeing clean marketplace records.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- ACCOUNT BANNER PLACEHOLDER: Save your account settings preview graphic as "account-details.png" in your "img" folder -->
+                <img class="image center" src="img/providersettings.png" alt="Business Details" style="max-width: 180px !important;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--End Provider Account Details Section-->
+       <!-------------------------------------------------------------------------------------------->
       </div>
     </div>
-    <div class="banner" style="background: url('img/dummy-background.jpeg') no-repeat center; background-size: cover; height: 500px;"></div>
+    
+    <!-- Feature Breakdown Mid-Banner -->
     <div class="banner">
       <div class="banner-table flex-column">
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 class="add-top-margin-small">This is the two banner area with photo</h2>
+            <h2 id= "application-interaction" class="add-top-margin-small">Ur Plug Application Interaction</h2>
             <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus.
+              See how our app works in practice. Below is an interface showing how a user can seamlessly search for a service by just entering a keyword. 
             </p>
           </div>
         </div>
       </div>
     </div>
+    
     <div class="content">
-      <div class="content-table flex-column">
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Images and Videos-->
+        <!-- Side-by-Side Video Demonstration Row -->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="text-with-images-and-videos" class="no-top-margin">Text with Images and Videos</h2>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  <strong>Live System Flow:</strong> This demo video shows how our Flutter frontend processes live database endpoints. It captures the keyword, checks the database and reflects services that contain that keyword.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- VIDEO PLACEHOLDER: If you have a Flutter app screen recording video, save it as "app-demo.mp4" in your "vid" folder -->
+                <video preload controls autoplay loop muted playsinline style="width: 100%; max-width: 180px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                  <source src="img/searchdemo.mp4" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <p class="text">
+              By packaging all these functional capabilities into a unified app structure, Ur Plug makes informal skills highly discoverable.
+            </p>
+          </div>
+        </div>
+        <!--End Application Media Section-->
+
+        
+        <!--Start Provider Detail View-->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <h2 id="provider-detail">Provider Detail Screen</h2>
             <hr>
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-              It va esser tam simplic quam Occidental in fact, it va esser Occidental. A un Angleso it va semblar un
-              simplificat Angles, quam un skeptic Cambridge amico dit me.
-            </p>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  When a consumer selects a nearby worker, they are greeted with a clean profile layout. This page showcases the artisan's cumulative star ratings, verified past work descriptions, customer feedback notes, and service listings.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- PROVIDER DETAIL PLACEHOLDER: Save your screenshot as "provider-detail.png" in your "img" folder -->
+                <img class="image center" src="img/providerdetail.png" alt="Provider Detail View Screen" style="max-width: 180px !important;">
+              </div>
+            </div>
           </div>
         </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <img class="image" src="img/dummay-img.png">
-          </div>
-          <div class="flex-item flex-item-stretch flex-column">
-            <p class="text">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem
-              aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-              Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni
-              dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor
-              sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore
-              magnam aliquam quaerat voluptatem. Sed ut perspiciatis unde.
-            </p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <video preload controls autoplay loop muted playsinline class="image">
-              <source src="vid/mov_bbb.mp4" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-          </div>
-          <div class="flex-item flex-item-stretch flex-column">
-            <p class="text">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem
-              aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-              Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni
-              dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor
-              sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore
-              magnam.
-            </p>
-          </div>
-        </div>
+        
+        <!--Start Account Details Section-->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <p class="text">
-              Ma quande lingues coalesce, li grammatica del resultant lingue es plu simplic e regulari quam ti del
-              coalescent lingues. Li nov lingua franca va esser plu simplic e regulari quam li existent Europan lingues.
-              It va esser tam simplic quam Occidental in fact, it va esser Occidental. A un Angleso it va semblar un
-              simplificat Angles, quam un skeptic Cambridge amico dit me.
-            </p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch-2 flex-column">
-            <p class="text">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem
-              aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-              Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni
-              dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor
-              sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora.
-            </p>
-          </div>
-          <div class="flex-item flex-item-stretch flex-column">
-            <img class="image" src="img/dummay-img.png">
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch-2 flex-column">
-            <p class="text">
-              Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem
-              aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-              Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni
-              dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor
-              sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora.
-            </p>
-          </div>
-          <div class="flex-item flex-item-stretch flex-column">
-            <video preload controls autoplay loop muted playsinline class="image">
-              <source src="vid/mov_bbb.mp4" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <p class="text">
-              Li Europan lingues es membres del sam familie. Lor separat existentie es un myth. Por scientie, musica,
-              sport etc, litot Europa usa li sam vocabular. Li lingues differe solmen in li grammatica, li pronunciation e
-              li plu commun vocabules. Omnicos directe al desirabilite de un nov lingua franca: On refusa continuar payar
-              custosi traductores. At solmen va esser.
-            </p>
-          </div>
-        </div>
-        <!--End Text with Images and Videos-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Text with Iframe-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="iframe">Iframe</h2>
+            <h2 id="account-details">Customer Account Details</h2>
             <hr>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-            <iframe class="iframe-in-body" src="https://yenchiah.me/geo-heatmap/smell.html"></iframe>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
+            <div class="media-split-container">
+              <div class="media-split-text">
+                <p class="text">
+                  Through the Account Details layout, service providers can update their operational status, upload verification documentation, manage their digital service catalog offerings, and check their mobile money transaction records safely.
+                </p>
+              </div>
+              <div class="media-split-image">
+                <!-- ACCOUNT DETAILS PLACEHOLDER: Save your screenshot as "account-details.png" in your "img" folder -->
+                <img class="image center" src="img/customerprofile.png" alt="Account Details Screen" style="max-width: 180px !important;">
+              </div>
+            </div>
           </div>
         </div>
-        <!--END Text with Iframe-->
+        <!--End Application Feature Screens-->
         <!-------------------------------------------------------------------------------------------->
-        <!--Start List of Projects-->
         <div class="flex-row">
           <div class="flex-item flex-column full-width">
-            <h2 id="list-of-projects">List of Projects</h2>
+            <h2 id="project-milestones">Project Development Milestones</h2>
             <hr>
           </div>
         </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <img class="image max-width-400" src="img/dummay-img.png">
-          </div>
-          <div class="flex-item flex-item-stretch-4 flex-column">
-            <p class="text">
-              <a class="highlight-text" href="javascript:void(0)">Li Europan Lingues es Membres Del Sam Familie</a><br>
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet.
-            </p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <img class="image max-width-400" src="img/dummay-img.png">
-          </div>
-          <div class="flex-item flex-item-stretch-4 flex-column">
-            <p class="text">
-              <a class="highlight-text" href="javascript:void(0)">Li Europan Lingues es Membres Del Sam Familie</a><br>
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet.
-            </p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <img class="image max-width-400" src="img/dummay-img.png">
-          </div>
-          <div class="flex-item flex-item-stretch-4 flex-column">
-            <p class="text">
-              <a class="highlight-text" href="javascript:void(0)">Li Europan Lingues es Membres Del Sam Familie</a><br>
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet.
-            </p>
-          </div>
-        </div>
-        <!--End List of Projects-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Gallery-->
+                <!-- Milestone Item 1 -->
         <div class="flex-row">
           <div class="flex-item flex-column">
-            <h2 id="gallery">Gallery (responsive size)</h2>
+            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
+              <div class="media-split-image" style="flex: 0 0 80px;">
+                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
+              </div>
+              <div class="media-split-text" style="flex: 1 1 400px;">
+                <p class="text" style="margin-top: 0;">
+                  <a class="highlight-text" href="javascript:void(0)">Phase 1: UI Mockups & Mobile Architecture Design</a><br>
+                  We began by designing the complete user journey flows for both consumers and the service providers using Flutter layout tools. We built the baseline navigation controls, state mechanics, and multi-role screen models in Dart to ensure that navigating between client tools and platform management settings is completely seamless and easy to use.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Milestone Item 2 -->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
+              <div class="media-split-image" style="flex: 0 0 80px;">
+                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
+              </div>
+              <div class="media-split-text" style="flex: 1 1 400px;">
+                <p class="text" style="margin-top: 0;">
+                  <a class="highlight-text" href="javascript:void(0)">Phase 2: Frontend Layouts & Real-Time Interaction</a><br>
+                  We built the responsive user interfaces for the signup screens, dashboards, and provider profiles. We implemented Flutter's native setState framework to handle local screen information dynamically and integrated asynchronous Dart streams to support our safe messaging screen models, which allow customers and providers to talk instantly about prices or urgency.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Milestone Item 3 -->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
+              <div class="media-split-image" style="flex: 0 0 80px;">
+                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
+              </div>
+              <div class="media-split-text" style="flex: 1 1 400px;">
+                <p class="text" style="margin-top: 0;">
+                  <a class="highlight-text" href="javascript:void(0)">Phase 3: Firebase Database Integration & Query Logic</a><br>
+                  We connected the application forms to secure data schemas in Firebase to manage accounts and archive encrypted messaging histories safely. We structured Cloud Firestore collections to track active job notifications, location information, and ratings, while using Firebase Authentication to let customers and service providers log in quickly using their registered credentials.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Milestone Item 4 -->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
+              <div class="media-split-image" style="flex: 0 0 80px;">
+                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
+              </div>
+              <div class="media-split-text" style="flex: 1 1 400px;">
+                <p class="text" style="margin-top: 0;">
+                  <a class="highlight-text" href="javascript:void(0)">Phase 4: Device Testing & System Optimization</a><br>
+                  We executed end-to-end device testing across varied network connection speeds to ensure our system stays low-data and completely reliable for small-scale traders in local Ugandan markets. We checked our database endpoints during keyword searches to verify that profile data updates undergo instant validations and reflect cleanly across client interfaces.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      <!-------------------------------------------------------------------------------------------->
+        
+        <!-- Team Members Structural Grid -->
+        <div class="flex-row">
+          <div class="flex-item flex-column">
+            <h2 id="team-members">Group 12 Project Team</h2>
             <hr>
             <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
+              Ur Plug was developed by Computer Science students at Makerere University to address service discoverability limitations across Uganda.
             </p>
           </div>
         </div>
-        <div class="gallery add-top-margin-small add-bottom-margin-small">
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-          <a href="javascript:void(0)" class="flex-column"><img src="img/dummay-img.png">
-            <div>Image Caption</div>
-          </a>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-          </div>
-        </div>
-        <div class="gallery add-top-margin-small add-bottom-margin-small">
-          <div class="flex-column">
-            <img src="img/dummay-img.png">
-            <h3>Phasellus Viverra</h3>
-            <div>Quisque Rutrum</div>
+        
+        <div class="gallery add-top-margin-small add-bottom-margin-small" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;">
+          <!-- Member 1 -->
+          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
+            <h3>KIDEN SARAH RUTH LUBANG</h3>
+            <div>Frontend Developer</div>
             <div>
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">Website</a>
-              &nbsp;|&nbsp;
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">LinkedIn</a>
+              <a href="https://github.com/Kiden-SOC" target="_blank">GitHub Profile</a>
             </div>
           </div>
-          <div class="flex-column">
-            <img src="img/dummay-img.png">
-            <h3>Phasellus Viverra</h3>
-            <div>Quisque Rutrum</div>
+          
+          <!-- Member 2 -->
+          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
+            <h3>ACEN PATIENCE RUTH</h3>
+            <div>Backend Developer</div>
             <div>
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">Website</a>
-              &nbsp;|&nbsp;
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">LinkedIn</a>
+              <a href="https://github.com" target="_blank">GitHub Profile</a>
             </div>
           </div>
-          <div class="flex-column">
-            <img src="img/dummay-img.png">
-            <h3>Phasellus Viverra</h3>
-            <div>Quisque Rutrum</div>
+          
+          <!-- Member 3 -->
+          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
+            <h3>ATIM ELEANOR</h3>
+            <div>Backend Developer</div>
             <div>
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">Website</a>
-              &nbsp;|&nbsp;
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">LinkedIn</a>
+              <a href="https://github.com" target="_blank">GitHub Profile</a>
             </div>
           </div>
-          <div class="flex-column">
-            <img src="img/dummay-img.png">
-            <h3>Phasellus Viverra</h3>
-            <div>Quisque Rutrum</div>
+          
+          <!-- Member 4 -->
+          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
+            <h3>NAKAYIWA JESSIE LILLIAN</h3>
+            <div>Backend Developer</div>
             <div>
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">Website</a>
-              &nbsp;|&nbsp;
-              <a href="https://yenchiah.me/project-website-template/" target="_blank">LinkedIn</a>
+              <a href="https://github.com" target="_blank">GitHub Profile</a>
             </div>
           </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
+
+          <!-- Member 5 -->
+          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
+            <h3>KIMULI DAVID</h3>
+            <div>Frontend Developer</div>
+            <div>
+              <a href="https://github.com" target="_blank">GitHub Profile</a>
+            </div>
           </div>
         </div>
         <!--End Gallery-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Masonry-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="masonry">Masonry (responsive size)</h2>
-            <hr>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-          </div>
-        </div>
-        <div class="masonry add-top-margin-small add-bottom-margin-small">
-          <figure>
-            <img src="https://images.unsplash.com/photo-1485182708500-e8f1f318ba72?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1820&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@heftiba" target="_blank">Toa Heftiba</a></div>
-            <figcaption>Phasellus viverra nulla!</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1590727264967-f26b2d31e3a1?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=792&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@markusspiske" target="_blank">Markus Spiske</a></div>
-            <figcaption>Nam eget dui, etiam rhoncus, maecenas tempus</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1740&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@priscilladupreez" target="_blank">Priscilla Du Preez</a></div>
-            <figcaption>Nam quam nunc, blandit vel, luctus pulvinar!!!</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1558023784-f8343393cb06?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=870&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@frankielopez" target="_blank">Frankie Lopez</a></div>
-            <figcaption>Pellentesque habitant morbi!</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1629036747901-6cad3758cd92?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=772&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@zhugher" target="_blank">he zhu</a></div>
-            <figcaption>Phasellus blandit leo ut odio.</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1477238134895-98438ad85c30?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=2600&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@cant89" target="_blank">Davide Cantelli</a></div>
-            <figcaption>Vestibulum ante ipsum primis</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1613946069412-38f7f1ff0b65?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=870&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@simonkaremann" target="_blank">Simon Karemann</a></div>
-            <figcaption>Aenean tellus metus, bibendum sed, posuere ac, mattis.</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1577985043696-8bd54d9f093f?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1740&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@adrienolichon" target="_blank">Adrien Olichon</a></div>
-            <figcaption>Nunc nonummy metus vestibulum volutpat.</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1594788094620-4579ad50c7fe?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1742&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@mohammadshahhosseini" target="_blank">Mohammad Shahhosseini</a></div>
-            <figcaption>Sed fringilla mauris sit amet nibh.</figcaption>
-          </figure>
-          <figure>
-            <img src="https://images.unsplash.com/photo-1606761568499-6d2451b23c66?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1548&amp;q=80">
-            <div>Credit: <a href="https://unsplash.com/@domlafou" target="_blank">Dom Fou</a></div>
-            <figcaption>Vestibulum purus quam, scelerisque ut.</figcaption>
-          </figure>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-          </div>
-        </div>
-        <!--End Masonry-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Survey-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="survey">Survey</h2>
-            <hr>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-            <div class="custom-survey add-top-margin add-bottom-margin">
-              <span class="text">1. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero.</span>
-              <div class="custom-radio-group-survey add-top-margin">
-                <div><input type="radio" name="scenario-question-sq-1508-scale" value="2596" id="scenario-question-sq-1508-item-0"> <label class="break-long-url" for="scenario-question-sq-1508-item-0">Strongly Agree</label></div>
-                <div><input type="radio" name="scenario-question-sq-1508-scale" value="2597" id="scenario-question-sq-1508-item-1"> <label class="break-long-url" for="scenario-question-sq-1508-item-1">Agree</label></div>
-                <div><input type="radio" name="scenario-question-sq-1508-scale" value="2598" id="scenario-question-sq-1508-item-2"> <label class="break-long-url" for="scenario-question-sq-1508-item-2">Neutral</label></div>
-                <div><input type="radio" name="scenario-question-sq-1508-scale" value="2599" id="scenario-question-sq-1508-item-3"> <label class="break-long-url" for="scenario-question-sq-1508-item-3">Disagree</label></div>
-                <div><input type="radio" name="scenario-question-sq-1508-scale" value="2600" id="scenario-question-sq-1508-item-4"> <label class="break-long-url" for="scenario-question-sq-1508-item-4">Strongly Disagree</label></div>
-              </div>
-            </div>
-            <div class="custom-survey add-top-margin add-bottom-margin">
-              <span class="text">2. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero.</span>
-              <div class="custom-radio-group-survey add-top-margin">
-                <div><input type="checkbox" name="scenario-question-sq-1508-scale" value="2596" id="scenario-question-sq-1510-item-0"> <label class="break-long-url" for="scenario-question-sq-1510-item-0">Strongly Agree</label></div>
-                <div><input type="checkbox" name="scenario-question-sq-1508-scale" value="2597" id="scenario-question-sq-1510-item-1"> <label class="break-long-url" for="scenario-question-sq-1510-item-1">Agree</label></div>
-                <div><input type="checkbox" name="scenario-question-sq-1508-scale" value="2598" id="scenario-question-sq-1510-item-2"> <label class="break-long-url" for="scenario-question-sq-1510-item-2">Neutral</label></div>
-                <div><input type="checkbox" name="scenario-question-sq-1508-scale" value="2599" id="scenario-question-sq-1510-item-3"> <label class="break-long-url" for="scenario-question-sq-1510-item-3">Disagree</label></div>
-                <div><input type="checkbox" name="scenario-question-sq-1508-scale" value="2600" id="scenario-question-sq-1510-item-4"> <label class="break-long-url" for="scenario-question-sq-1510-item-4">Strongly Disagree</label></div>
-              </div>
-            </div>
-            <div class="custom-survey add-top-margin add-bottom-margin">
-              <span class="text">3. Do you have any comments for this study?</span>
-              <textarea class="custom-textbox-survey add-top-margin" placeholder="(max 500 characters)" maxlength="500"></textarea>
-            </div>
-            <div class="custom-survey add-top-margin add-bottom-margin">
-              <span class="text">4. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero.</span>
-              <div class="custom-radio-group-survey image-only add-top-margin">
-                <div> <input type="checkbox" name="scenario-question-sq-1545-scale" value="2720" id="scenario-question-sq-1545-item-2"><label for="scenario-question-sq-1545-item-2">
-                    <figure><img src="https://images.unsplash.com/photo-1597914377769-db5167cb0221?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=774&amp;q=80">
-                      <div>Credit: Justus Menke</div>
-                      <figcaption>Phasellus viverra nulla ut metus varius laoreet.</figcaption>
-                    </figure>
-                  </label> </div>
-                <div> <input type="checkbox" name="scenario-question-sq-1545-scale" value="2726" id="scenario-question-sq-1545-item-4"><label for="scenario-question-sq-1545-item-4">
-                    <figure><img src="https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=2874&amp;q=80">
-                      <div>Credit: Chris Montgomery</div>
-                      <figcaption>Nam eget dui. Etiam rhoncus</figcaption>
-                    </figure>
-                  </label> </div>
-                <div> <input type="checkbox" name="scenario-question-sq-1545-scale" value="2721" id="scenario-question-sq-1545-item-5"><label for="scenario-question-sq-1545-item-5">
-                    <figure><img src="https://images.unsplash.com/photo-1506485338023-6ce5f36692df?ixlib=rb-1.2.1&amp;ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&amp;auto=format&amp;fit=crop&amp;w=1740&amp;q=80">
-                      <div>Credit: Jazmin Quaynor</div>
-                      <figcaption>Etiam ultricies nisi vel augue.</figcaption>
-                    </figure>
-                  </label> </div>
-              </div>
-            </div>
-            <p class="text">
-              Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel
-              augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget
-              condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit
-              vel, luctus pulvinar, hendrerit id, lorem.
-            </p>
-          </div>
-        </div>
-        <!--End Survey-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Credits-->
-        <div class="flex-row">
-          <div class="flex-item flex-item-stretch flex-column">
-            <p class="text text-small text-italic add-top-margin-large">
-              Credits: <span class="highlight-text">Organization One</span>: Author One and Author Two / <span class="highlight-text">Organization Two</span>: Author Three and Author Four
-            </p>
-          </div>
-        </div>
-        <!--End Credits-->
+       
         <!-------------------------------------------------------------------------------------------->
       </div>
     </div>
+    <!-- The template's dynamic script containers inject the master footer file content cleanly here -->
     <div class="footer-container"></div>
   </div>
 </body>
