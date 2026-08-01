@@ -69,6 +69,13 @@ class SearchResultsScreen extends StatelessWidget {
                             'id': providers[index].id,
                             'name': data['businessName'] ?? '',
                             'category': data['businessCategory'] ?? '',
+                            'district': data['district'] ?? '',
+                            'town': data['town'] ?? '',
+                            'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+                            'jobs': data['completedJobs'] ?? 0,
+                            'bio': data['bio'] ?? '',
+                            'yearsOfExperience': data['yearsOfExperience'] ?? 0,
+                            'phone': data['phone'] ?? '',
                           }),
                         ),
                       );

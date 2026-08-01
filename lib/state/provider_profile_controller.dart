@@ -120,7 +120,7 @@ class ProviderProfileController extends ChangeNotifier {
     if (profilePhotoPath.isNotEmpty &&
         !profilePhotoPath.startsWith('http')) {
       final url =
-          await _storageService.uploadProfilePhoto(uid, profilePhotoPath);
+      await _storageService.uploadProfilePhoto(uid, profilePhotoPath);
       if (url != null) profilePhotoPath = url;
     }
 
@@ -169,7 +169,7 @@ class ProviderProfileController extends ChangeNotifier {
     String photoUrl = localPath;
     if (uid != null) {
       final uploaded =
-          await _storageService.uploadProfilePhoto(uid, localPath);
+      await _storageService.uploadProfilePhoto(uid, localPath);
       if (uploaded == null) return false;
       photoUrl = uploaded;
     }
@@ -287,8 +287,8 @@ class ProviderProfileController extends ChangeNotifier {
             yearsOfExperience: data['yearsOfExperience'] ?? 0,
             profilePhotoPath: data['profilePhotoUrl'] ?? '',
             businessPhotoPaths:
-                (data['businessPhotoUrls'] as List?)?.cast<String>() ??
-                    const [],
+            (data['businessPhotoUrls'] as List?)?.cast<String>() ??
+                const [],
           );
         }
 
@@ -410,9 +410,9 @@ class ProviderProfileController extends ChangeNotifier {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final servicesRef = uid != null
         ? FirebaseFirestore.instance
-            .collection('providers')
-            .doc(uid)
-            .collection('services')
+        .collection('providers')
+        .doc(uid)
+        .collection('services')
         : null;
     final id = servicesRef?.doc().id ??
         'svc-${DateTime.now().millisecondsSinceEpoch}';
