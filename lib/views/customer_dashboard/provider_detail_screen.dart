@@ -27,6 +27,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
   bool _checkingStatus = true;
   bool _alreadyRequested = false;
   bool _submitting = false;
+  bool _checkingReviewEligibility = false;
 
   // Added variables for the lecturer's pop-up requirement
   final _dialogFormKey = GlobalKey<FormState>();
@@ -317,7 +318,46 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 
-  void _showReviewDialog(BuildContext context) {
+  /// Looks for a completed, not-yet-reviewed booking between the current
+  /// customer and this provider. Returns the booking doc ID, or null if
+  /// no eligible booking exists.
+  Future<String?> _findEligibleBookingId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final providerId = widget.provider['id'] ?? '';
+    if (user == null || providerId.isEmpty) return null;
+
+    final snap = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('customerUid', isEqualTo: user.uid)
+        .where('providerUid', isEqualTo: providerId)
+        .where('status', isEqualTo: 'completed')
+        .where('reviewed', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return snap.docs.first.id;
+  }
+
+  Future<void> _onLeaveReviewPressed() async {
+    setState(() => _checkingReviewEligibility = true);
+    final jobId = await _findEligibleBookingId();
+    if (!mounted) return;
+    setState(() => _checkingReviewEligibility = false);
+
+    if (jobId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only review a provider after a completed job with them.'),
+        ),
+      );
+      return;
+    }
+
+    _showReviewDialog(context, jobId);
+  }
+
+  void _showReviewDialog(BuildContext context, String jobId) {
     final commentController = TextEditingController();
     double starRating = 5;
 
@@ -367,24 +407,55 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                 if (user == null) return;
                 final customerProfile = context.read<CustomerProfileController>().profile;
                 final providerId = widget.provider['id'] ?? '';
+                if (providerId.isEmpty) return;
 
-                await FirebaseFirestore.instance
-                    .collection('providers')
-                    .doc(providerId)
-                    .collection('reviews')
-                    .add({
-                  'customerUid': user.uid,
-                  'customerName': customerProfile.name.isNotEmpty ? customerProfile.name : 'Anonymous',
-                  'rating': starRating,
-                  'comment': commentController.text.trim(),
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
+                final providerRef =
+                FirebaseFirestore.instance.collection('providers').doc(providerId);
+                final reviewRef = providerRef.collection('reviews').doc();
+                final jobRef = FirebaseFirestore.instance.collection('bookings').doc(jobId);
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Review submitted!')),
-                  );
+                try {
+                  await FirebaseFirestore.instance.runTransaction((tx) async {
+                    final providerSnap = await tx.get(providerRef);
+                    final data = providerSnap.data() ?? {};
+                    final currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+                    final currentAvg = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+                    final newCount = currentCount + 1;
+                    final newAvg = ((currentAvg * currentCount) + starRating) / newCount;
+
+                    tx.set(reviewRef, {
+                      'jobId': jobId,
+                      'customerUid': user.uid,
+                      'customerName': customerProfile.name.isNotEmpty
+                          ? customerProfile.name
+                          : 'Anonymous',
+                      'rating': starRating,
+                      'comment': commentController.text.trim(),
+                      'createdAt': FieldValue.serverTimestamp(),
+                    });
+
+                    tx.update(providerRef, {
+                      'rating': newAvg,
+                      'reviewCount': newCount,
+                    });
+
+                    tx.update(jobRef, {'reviewed': true});
+                  });
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Review submitted!')),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Review submit error: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Couldn't submit review. Try again.")),
+                    );
+                  }
                 }
               },
               child: const Text('Submit'),
@@ -860,24 +931,59 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                                     title: const Text('Call Provider', style: TextStyle(fontWeight: FontWeight.w600)),
                                     subtitle: const Text('Place a direct phone call'),
                                     onTap: () async {
-                                      Navigator.pop(context); // Close sheet
+                                      Navigator.pop(context);
 
-                                      // Pulls phone dynamic variable directly from your provider map
-                                      final String phoneNumber = widget.provider['phone'] ?? '';
+                                      try {
+                                        // Try the phone stored in the providers collection first
+                                        String phoneNumber = (widget.provider['phone'] ?? '').toString().trim();
 
-                                      if (phoneNumber.isNotEmpty) {
-                                        final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-                                        if (await canLaunchUrl(launchUri)) {
-                                          await launchUrl(launchUri);
-                                        } else {
-                                          if (!context.mounted) return;
+                                        // Fallback: get the phone from the users collection
+                                        if (phoneNumber.isEmpty) {
+                                          final String providerUid = widget.provider['id'] ?? '';
+
+                                          if (providerUid.isNotEmpty) {
+                                            final userDoc = await FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(providerUid)
+                                                .get();
+
+                                            if (userDoc.exists) {
+                                              phoneNumber =
+                                                  (userDoc.data()?['contact'] ?? '').toString().trim();
+                                            }
+                                          }
+                                        }
+
+                                        if (phoneNumber.isEmpty) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Could not launch the phone dialer.')),
+                                            const SnackBar(
+                                              content: Text('Provider phone number not available.'),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        final Uri phoneUri = Uri(
+                                          scheme: 'tel',
+                                          path: phoneNumber,
+                                        );
+
+                                        if (await canLaunchUrl(phoneUri)) {
+                                          await launchUrl(phoneUri);
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Phone number: $phoneNumber\n(No phone app available on this device)',
+                                              ),
+                                            ),
                                           );
                                         }
-                                      } else {
+                                      } catch (e) {
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Provider phone number not available.')),
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                          ),
                                         );
                                       }
                                     },
@@ -905,8 +1011,14 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _showReviewDialog(context),
-              icon: const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
+              onPressed: _checkingReviewEligibility ? null : _onLeaveReviewPressed,
+              icon: _checkingReviewEligibility
+                  ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+              )
+                  : const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
               label: const Text('Leave a Review', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: brandPrimary),
@@ -952,12 +1064,12 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                     final data = reviews[index].data() as Map<String, dynamic>;
                     final name = data['customerName'] ?? 'Anonymous';
                     final comment = data['comment'] ?? '';
-                    final ratingValue = (data['rating'] ?? 5.0).toString();
+                    final reviewRatingValue = (data['rating'] ?? 5.0).toString();
 
                     return _buildReviewCard(
                       clientName: name,
                       reviewText: comment,
-                      starRating: ratingValue,
+                      starRating: reviewRatingValue,
                     );
                   },
                 );
@@ -1017,12 +1129,3 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 }
-
-
-  
-
-
-
-
-
-

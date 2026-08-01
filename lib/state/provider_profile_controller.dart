@@ -120,7 +120,7 @@ class ProviderProfileController extends ChangeNotifier {
     if (profilePhotoPath.isNotEmpty &&
         !profilePhotoPath.startsWith('http')) {
       final url =
-      await _storageService.uploadProfilePhoto(uid, profilePhotoPath);
+          await _storageService.uploadProfilePhoto(uid, profilePhotoPath);
       if (url != null) profilePhotoPath = url;
     }
 

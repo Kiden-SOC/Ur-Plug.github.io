@@ -56,6 +56,7 @@ class _SearchScreenState extends State<SearchScreen> {
         'district': data['district'] ?? '',
         'town': data['town'] ?? '',
         'rating': (data['rating'] as num?)?.toDouble() ?? 0.0,
+        'reviewCount': data['reviewCount'] ?? 0,
         'jobs': data['completedJobs'] ?? 0,
         'responseRate': (data['responseRate'] as num?)?.toDouble() ?? 0.0,
         'bio': data['bio'] ?? '',
@@ -143,17 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // Shown above search results when we had to widen beyond the user's town/district
   String? _searchScopeNotice;
 
-  // Aliases so "plumber" search still matches providers stored as "Plumbing", etc.
   final Map<String, List<String>> categorySearchAliases = {
-    'plumbing': ['plumber', 'plumbers', 'plumbing', "toilet", "tap", "sink", "pipe", "drain", "leak", "leaking", "water", "flush", "shower", "sinks","sink fix"],
-    'electrician': ['electrician', 'electricians', 'electrical',"socket", "switch", "wire", "wiring", "bulb", "power", "electricity", "generator", "lights", "light", "fix"],
-    'mechanic': ['mechanic', 'mechanics',"car", "vehicle", "engine", "gearbox", "battery", "tyre", "brake", "oil", "breakdown"],
-    'carpenter': ['carpenter', 'carpenters', 'carpentry'],
-    'interior design': ['interior design', 'interior designer', 'decor',"decoration", "design", "painting", "wall", "ceiling", "tiles", "curtains", "furniture"],
-    'cleaner': ['cleaner', 'cleaners', 'cleaning',"clean", "washing", "laundry", "compound", "office", "house"],
-    'painter': ['painter', 'painters', 'painting',"paint", "painting", "wall", "colour", "house"],
-    'welder': ['welder', 'welders', 'welding'],
-    'handyman': ['handyman', 'handymen'],
   };
 
   String get _providerSectionTitle =>
@@ -181,8 +172,13 @@ class _SearchScreenState extends State<SearchScreen> {
         if (name.contains(query) || category.contains(query) || town.contains(query)) {
           return true;
         }
+
         final aliases = categorySearchAliases[category];
-        return aliases != null && aliases.any((alias) => query.contains(alias));
+        if (aliases != null) {
+          return aliases.any((alias) => alias.toLowerCase().contains(query));
+        }
+
+        return false;
       }
 
       final allMatches = _allProviders.where(matchesQuery).toList();
@@ -407,7 +403,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      '${provider['rating'] ?? '0.0'} (${provider['jobs'] ?? '0 jobs'})',
+                                      (provider['rating'] as double).toStringAsFixed(1),
                                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -699,7 +695,6 @@ class _FilteredServicesScreenState extends State<FilteredServicesScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 16),
-                          Text('${provider['rating'] ?? 0}'),
                         ],
                       ),
                       onTap: () {
