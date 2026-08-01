@@ -6,3 +6,8 @@ build/
 *.iml
 .flutter-plugins-dependencies
 Ur-Plug.github.io/
+android/java_pid16484.hprof.bak
+*.hprof.bak
+public/urplug.apk
+
+android/*.hprof

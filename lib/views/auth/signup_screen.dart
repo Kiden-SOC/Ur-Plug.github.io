@@ -6,6 +6,7 @@ import '../business_dashboard/business_screen.dart';
 import '../customer_dashboard/search_screen.dart';
 import 'package:provider/provider.dart';
 import '../../state/customer_profile_controller.dart';
+import '../../services/auth_service.dart';
 
 enum UserRole { customer, business }
 
