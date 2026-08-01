@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
   // The bio data is hidden inside this provider Map.
-  // We will display it in the build method using: widget.provider['bio'] 
+  // We will display it in the build method using: widget.provider['bio']
   // (or 'description'/'about' depending on your Firestore key)
   final Map<String, dynamic> provider;
   const ProviderDetailScreen({super.key, required this.provider});
@@ -361,7 +361,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     final commentController = TextEditingController();
     double starRating = 5;
 
-  showDialog(
+    showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
@@ -499,14 +499,14 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
           final String completedJobs = (data['jobs'] ?? data['completedJobs'] ?? '0').toString();
           final String profilePhotoUrl = _pick(data, ['profilePhotoUrl']);
           final List<String> workPhotos = (data['businessPhotoUrls'] as List?)
-                  ?.map((e) => e.toString())
-                  .toList() ??
+              ?.map((e) => e.toString())
+              .toList() ??
               const [];
 
           // RETRIEVES THE BIO FIELD FROM FIRESTORE
           final String rawBio = _pick(data, ['bio']);
           final String businessBio =
-              rawBio.isNotEmpty ? rawBio : 'No service description provided by this business.';
+          rawBio.isNotEmpty ? rawBio : 'No service description provided by this business.';
 
           // Years of experience the provider entered when signing up.
           final int yearsOfExperience = int.tryParse((data['yearsOfExperience'] ?? '0').toString()) ?? 0;
@@ -581,39 +581,39 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
                       Expanded(
                         child: photos.isEmpty
                             ? const Center(
-                                child: Text(
-                                  'This provider hasn\'t uploaded any work photos yet.',
-                                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                              )
+                          child: Text(
+                            'This provider hasn\'t uploaded any work photos yet.',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                        )
                             : GridView.builder(
-                                controller: scrollController,
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
+                          controller: scrollController,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                          itemCount: photos.length,
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                photos[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: screenBackground,
+                                  alignment: Alignment.center,
+                                  child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
                                 ),
-                                itemCount: photos.length,
-                                itemBuilder: (context, index) {
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      photos[index],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: screenBackground,
-                                        alignment: Alignment.center,
-                                        child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                                      ),
-                                      loadingBuilder: (context, child, progress) => progress == null
-                                          ? child
-                                          : const Center(
-                                              child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2),
-                                            ),
-                                    ),
-                                  );
-                                },
+                                loadingBuilder: (context, child, progress) => progress == null
+                                    ? child
+                                    : const Center(
+                                  child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2),
+                                ),
                               ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -641,442 +641,442 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     required int yearsOfExperience,
   }) {
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 45,
-                    backgroundColor: brandPrimary.withValues(alpha: 0.1),
-                    child: profilePhotoUrl.isEmpty
-                        ? const Icon(Icons.storefront, size: 45, color: brandPrimary)
-                        : ClipOval(
-                            child: Image.network(
-                              profilePhotoUrl,
-                              width: 90,
-                              height: 90,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.storefront, size: 45, color: brandPrimary),
-                              loadingBuilder: (context, child, progress) => progress == null
-                                  ? child
-                                  : const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
-                                    ),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(businessName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary), textAlign: TextAlign.center),
-                  if (tradeTitle.isNotEmpty)
-                    Text(tradeTitle, style: const TextStyle(fontSize: 15, color: brandSecondary, fontWeight: FontWeight.w600)),
-                  const Divider(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildMetricItem(Icons.task_alt, 'Completed Jobs', completedJobs),
-                      _buildMetricItem(Icons.star, 'Rating', rating),
-                      _buildMetricItem(Icons.workspace_premium, 'Experience',
-                          yearsOfExperience > 0 ? '$yearsOfExperience yrs' : 'New'),
-                    ],
-                  )
-                ],
-              ),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
             ),
-            const SizedBox(height: 16),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  backgroundColor: brandPrimary.withValues(alpha: 0.1),
+                  child: profilePhotoUrl.isEmpty
+                      ? const Icon(Icons.storefront, size: 45, color: brandPrimary)
+                      : ClipOval(
+                    child: Image.network(
+                      profilePhotoUrl,
+                      width: 90,
+                      height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.storefront, size: 45, color: brandPrimary),
+                      loadingBuilder: (context, child, progress) => progress == null
+                          ? child
+                          : const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(businessName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: brandPrimary), textAlign: TextAlign.center),
+                if (tradeTitle.isNotEmpty)
+                  Text(tradeTitle, style: const TextStyle(fontSize: 15, color: brandSecondary, fontWeight: FontWeight.w600)),
+                const Divider(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildMetricItem(Icons.task_alt, 'Completed Jobs', completedJobs),
+                    _buildMetricItem(Icons.star, 'Rating', rating),
+                    _buildMetricItem(Icons.workspace_premium, 'Experience',
+                        yearsOfExperience > 0 ? '$yearsOfExperience yrs' : 'New'),
+                  ],
+                )
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-            // BRAND NEW CONTAINER BLOCK THAT DISPLAYS THE BIO
+          // BRAND NEW CONTAINER BLOCK THAT DISPLAYS THE BIO
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: brandSecondary, size: 20),
+                    SizedBox(width: 8),
+                    Text('Service Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  businessBio,
+                  style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SERVICES OFFERED — the service list the provider set up in
+          // their Service Listings screen, streamed live from Firestore
+          // so the consumer can review it before choosing this provider.
+          if (providerId.isNotEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.info_outline, color: brandSecondary, size: 20),
+                      Icon(Icons.design_services_outlined, color: brandSecondary, size: 20),
                       SizedBox(width: 8),
-                      Text('Service Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                      Text('Services Offered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    businessBio, 
-                    style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400),
+                  const SizedBox(height: 12),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('providers')
+                        .doc(providerId)
+                        .collection('services')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2)),
+                        );
+                      }
+                      final allDocs = snapshot.data?.docs ?? [];
+                      final activeDocs = allDocs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return data['isActive'] ?? true;
+                      }).toList();
+
+                      if (activeDocs.isEmpty) {
+                        return const Text(
+                          'This provider hasn\'t published any service listings yet.',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        );
+                      }
+
+                      return Column(
+                        children: activeDocs.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final title = (data['title'] ?? '').toString();
+                          final description = (data['description'] ?? '').toString();
+                          return Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: screenBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 15, color: brandSecondary),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(title,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
+                                    ),
+                                  ],
+                                ),
+                                if (description.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(description,
+                                      style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.35)),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-            // SERVICES OFFERED — the service list the provider set up in
-            // their Service Listings screen, streamed live from Firestore
-            // so the consumer can review it before choosing this provider.
-            if (providerId.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.design_services_outlined, color: brandSecondary, size: 20),
-                        SizedBox(width: 8),
-                        Text('Services Offered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
-                      ],
+          if (providerId.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showWorkPhotosSheet(context, providerId),
+                icon: const Icon(Icons.photo_library_outlined, size: 18, color: brandPrimary),
+                label: Text(
+                  workPhotos.isEmpty
+                      ? 'View work photos'
+                      : 'View work photos (${workPhotos.length})',
+                  style: const TextStyle(color: brandPrimary, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: brandPrimary),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+
+          if (district.isNotEmpty || town.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.near_me, color: brandSecondary, size: 20),
+                      SizedBox(width: 8),
+                      Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text('$town, $district', style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    // Changed from direct upload to now showing the lecturer's pop-up form
+                    onPressed: (_checkingStatus || _alreadyRequested || _submitting) ? null : _showInstantBookingDialog,
+                    icon: _submitting
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                        : Icon(_alreadyRequested ? Icons.check_circle_outline : Icons.handshake_outlined, size: 20),
+                    label: Text(
+                      _alreadyRequested ? 'Requested' : 'Request Provider',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 12),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('providers')
-                          .doc(providerId)
-                          .collection('services')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Center(child: CircularProgressIndicator(color: brandPrimary, strokeWidth: 2)),
-                          );
-                        }
-                        final allDocs = snapshot.data?.docs ?? [];
-                        final activeDocs = allDocs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return data['isActive'] ?? true;
-                        }).toList();
-
-                        if (activeDocs.isEmpty) {
-                          return const Text(
-                            'This provider hasn\'t published any service listings yet.',
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
-                          );
-                        }
-
-                        return Column(
-                          children: activeDocs.map((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            final title = (data['title'] ?? '').toString();
-                            final description = (data['description'] ?? '').toString();
-                            return Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: screenBackground,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _alreadyRequested ? Colors.grey.shade400 : brandSecondary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // Shows an options sheet to choose between Calling or Messaging
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (context) {
+                          return SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.check_circle, size: 15, color: brandSecondary),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(title,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: brandPrimary)),
-                                      ),
-                                    ],
+                                  const Text(
+                                    'Contact Provider',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: brandPrimary),
                                   ),
-                                  if (description.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Text(description,
-                                        style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.35)),
-                                  ],
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-
-            if (providerId.isNotEmpty)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _showWorkPhotosSheet(context, providerId),
-                  icon: const Icon(Icons.photo_library_outlined, size: 18, color: brandPrimary),
-                  label: Text(
-                    workPhotos.isEmpty
-                        ? 'View work photos'
-                        : 'View work photos (${workPhotos.length})',
-                    style: const TextStyle(color: brandPrimary, fontWeight: FontWeight.bold),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: brandPrimary),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 16),
-
-            if (district.isNotEmpty || town.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.near_me, color: brandSecondary, size: 20),
-                        SizedBox(width: 8),
-                        Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: brandPrimary)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text('$town, $district', style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      // Changed from direct upload to now showing the lecturer's pop-up form
-                      onPressed: (_checkingStatus || _alreadyRequested || _submitting) ? null : _showInstantBookingDialog,
-                      icon: _submitting
-                          ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                          : Icon(_alreadyRequested ? Icons.check_circle_outline : Icons.handshake_outlined, size: 20),
-                      label: Text(
-                        _alreadyRequested ? 'Requested' : 'Request Provider',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _alreadyRequested ? Colors.grey.shade400 : brandSecondary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Shows an options sheet to choose between Calling or Messaging
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.white,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                          ),
-                          builder: (context) {
-                            return SafeArea(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      'Contact Provider',
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: brandPrimary),
+                                  const SizedBox(height: 12),
+                                  ListTile(
+                                    leading: const CircleAvatar(
+                                      backgroundColor: Color(0xFFE0F2F1),
+                                      child: Icon(Icons.chat_bubble_outline, color: brandPrimary),
                                     ),
-                                    const SizedBox(height: 12),
-                                    ListTile(
-                                      leading: const CircleAvatar(
-                                        backgroundColor: Color(0xFFE0F2F1),
-                                        child: Icon(Icons.chat_bubble_outline, color: brandPrimary),
-                                      ),
-                                      title: const Text('Send a Message', style: TextStyle(fontWeight: FontWeight.w600)),
-                                      subtitle: const Text('Chat inside the application'),
-                                      onTap: () {
-                                        Navigator.pop(context); // Close sheet
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => ChatScreen(providerUid: providerId, providerName: businessName)),
-                                        );
-                                      },
+                                    title: const Text('Send a Message', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    subtitle: const Text('Chat inside the application'),
+                                    onTap: () {
+                                      Navigator.pop(context); // Close sheet
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => ChatScreen(providerUid: providerId, providerName: businessName)),
+                                      );
+                                    },
+                                  ),
+                                  const Divider(height: 1),
+                                  ListTile(
+                                    leading: const CircleAvatar(
+                                      backgroundColor: Color(0xFFE0F2F1),
+                                      child: Icon(Icons.call_outlined, color: brandSecondary),
                                     ),
-                                    const Divider(height: 1),
-                                    ListTile(
-                                      leading: const CircleAvatar(
-                                        backgroundColor: Color(0xFFE0F2F1),
-                                        child: Icon(Icons.call_outlined, color: brandSecondary),
-                                      ),
-                                      title: const Text('Call Provider', style: TextStyle(fontWeight: FontWeight.w600)),
-                                      subtitle: const Text('Place a direct phone call'),
-                                      onTap: () async {
-                                        Navigator.pop(context);
+                                    title: const Text('Call Provider', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    subtitle: const Text('Place a direct phone call'),
+                                    onTap: () async {
+                                      Navigator.pop(context);
 
-                                        try {
-                                          // Try the phone stored in the providers collection first
-                                          String phoneNumber = (widget.provider['phone'] ?? '').toString().trim();
+                                      try {
+                                        // Try the phone stored in the providers collection first
+                                        String phoneNumber = (widget.provider['phone'] ?? '').toString().trim();
 
-                                          // Fallback: get the phone from the users collection
-                                          if (phoneNumber.isEmpty) {
-                                            final String providerUid = widget.provider['id'] ?? '';
+                                        // Fallback: get the phone from the users collection
+                                        if (phoneNumber.isEmpty) {
+                                          final String providerUid = widget.provider['id'] ?? '';
 
-                                            if (providerUid.isNotEmpty) {
-                                              final userDoc = await FirebaseFirestore.instance
-                                                  .collection('users')
-                                                  .doc(providerUid)
-                                                  .get();
+                                          if (providerUid.isNotEmpty) {
+                                            final userDoc = await FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(providerUid)
+                                                .get();
 
-                                              if (userDoc.exists) {
-                                                phoneNumber =
-                                                    (userDoc.data()?['contact'] ?? '').toString().trim();
-                                              }
+                                            if (userDoc.exists) {
+                                              phoneNumber =
+                                                  (userDoc.data()?['contact'] ?? '').toString().trim();
                                             }
                                           }
+                                        }
 
-                                          if (phoneNumber.isEmpty) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Provider phone number not available.'),
-                                              ),
-                                            );
-                                            return;
-                                          }
-
-                                          final Uri phoneUri = Uri(
-                                            scheme: 'tel',
-                                            path: phoneNumber,
+                                        if (phoneNumber.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Provider phone number not available.'),
+                                            ),
                                           );
+                                          return;
+                                        }
 
-                                          if (await canLaunchUrl(phoneUri)) {
-                                            await launchUrl(phoneUri);
-                                          } else {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Phone number: $phoneNumber\n(No phone app available on this device)',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
+                                        final Uri phoneUri = Uri(
+                                          scheme: 'tel',
+                                          path: phoneNumber,
+                                        );
+
+                                        if (await canLaunchUrl(phoneUri)) {
+                                          await launchUrl(phoneUri);
+                                        } else {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text('Error: $e'),
+                                              content: Text(
+                                                'Phone number: $phoneNumber\n(No phone app available on this device)',
+                                              ),
                                             ),
                                           );
                                         }
-                                      },
-                                    ),
-                                  ],
-                                ),
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.contact_mail_outlined, size: 20),
-                      label: const Text('Contact', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brandPrimary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.contact_mail_outlined, size: 20),
+                    label: const Text('Contact', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandPrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-                        SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _checkingReviewEligibility ? null : _onLeaveReviewPressed,
-                icon: _checkingReviewEligibility
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
-                )
-                    : const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
-                label: const Text('Leave a Review', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: brandPrimary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _checkingReviewEligibility ? null : _onLeaveReviewPressed,
+              icon: _checkingReviewEligibility
+                  ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: brandPrimary),
+              )
+                  : const Icon(Icons.rate_review_outlined, size: 18, color: brandPrimary),
+              label: const Text('Leave a Review', style: TextStyle(color: brandPrimary, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: brandPrimary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
-            const SizedBox(height: 28),
+          ),
+          const SizedBox(height: 28),
 
-            const Text('Client Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary)),
-            const SizedBox(height: 12),
+          const Text('Client Reviews', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: brandPrimary)),
+          const SizedBox(height: 12),
 
-            if (providerId.isEmpty)
-              const Text('Reviews unavailable.', style: TextStyle(color: Colors.grey, fontSize: 13))
-            else
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('providers')
-                    .doc(providerId)
-                    .collection('reviews')
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(child: CircularProgressIndicator(color: brandPrimary)),
-                    );
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text('No reviews yet.', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                    );
-                  }
-                  final reviews = snapshot.data!.docs;
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: reviews.length,
-                    itemBuilder: (context, index) {
-                      final data = reviews[index].data() as Map<String, dynamic>;
-                      final name = data['customerName'] ?? 'Anonymous';
-                      final comment = data['comment'] ?? '';
-                      final reviewRatingValue = (data['rating'] ?? 5.0).toString();
-
-                      return _buildReviewCard(
-                        clientName: name,
-                        reviewText: comment,
-                        starRating: reviewRatingValue,
-                      );
-                    },
+          if (providerId.isEmpty)
+            const Text('Reviews unavailable.', style: TextStyle(color: Colors.grey, fontSize: 13))
+          else
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('providers')
+                  .doc(providerId)
+                  .collection('reviews')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(child: CircularProgressIndicator(color: brandPrimary)),
                   );
-                },
-              ),
-          ],
-        ),
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text('No reviews yet.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  );
+                }
+                final reviews = snapshot.data!.docs;
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    final data = reviews[index].data() as Map<String, dynamic>;
+                    final name = data['customerName'] ?? 'Anonymous';
+                    final comment = data['comment'] ?? '';
+                    final reviewRatingValue = (data['rating'] ?? 5.0).toString();
+
+                    return _buildReviewCard(
+                      clientName: name,
+                      reviewText: comment,
+                      starRating: reviewRatingValue,
+                    );
+                  },
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -1129,12 +1129,3 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen> {
     );
   }
 }
-
-
-  
-
-
-
-
-
-
