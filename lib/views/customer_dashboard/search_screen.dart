@@ -145,6 +145,44 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _searchScopeNotice;
 
   final Map<String, List<String>> categorySearchAliases = {
+    'plumbing': ['pipes', 'leak', 'tap', 'drainage', 'water', 'toilet', 'sink', 'burst pipe'],
+    'electrician': ['wiring', 'power', 'sockets', 'lights', 'circuit', 'fuse', 'electrical fault'],
+    'mechanic': ['car', 'garage', 'engine', 'vehicle', 'auto repair', 'brakes', 'tyre'],
+    'carpenter': ['furniture', 'wood', 'joinery', 'cabinets', 'doors', 'shelves'],
+    'cleaner': ['cleaning', 'housekeeping', 'laundry', 'house help', 'domestic worker'],
+
+    'welder': ['welding', 'metalwork', 'gates', 'grills', 'fabrication', 'steel'],
+    'painter': ['painting', 'house paint', 'wall paint', 'spray painting', 'decorator'],
+    'mason': ['masonry', 'bricklaying', 'construction', 'building', 'block laying'],
+    'roofer': ['roofing', 'iron sheets', 'ceiling', 'gutters'],
+    'tiler': ['tiling', 'floor tiles', 'bathroom tiles'],
+
+    'boda boda': ['motorcycle taxi', 'rider', 'delivery', 'errands', 'transport'],
+    'driver': ['chauffeur', 'taxi', 'transport', 'car hire'],
+    'mover': ['moving', 'relocation', 'transport goods', 'truck hire', 'furniture moving'],
+
+    'hairdresser': ['salon', 'hair braiding', 'hairstylist', 'weaving', 'barber'],
+    'barber': ['haircut', 'salon', 'shaving', 'hair cutting'],
+    'makeup artist': ['makeup', 'bridal makeup', 'beauty'],
+    'tailor': ['sewing', 'dressmaking', 'stitching', 'alterations', 'fashion designer'],
+
+    'gardener': ['landscaping', 'lawn mowing', 'garden maintenance', 'compound cleaning'],
+    'security guard': ['security', 'watchman', 'guard services'],
+    'nanny': ['babysitter', 'childcare', 'house help', 'maid'],
+    'caterer': ['catering', 'food services', 'event cooking', 'chef'],
+    'photographer': ['photography', 'videography', 'event coverage'],
+    'dj': ['music', 'sound system', 'event entertainment', 'mc'],
+    'event planner': ['event planning', 'decor', 'party planning', 'weddings'],
+
+    'computer repair': ['laptop repair', 'phone repair', 'tech support', 'it services'],
+    'appliance repair': ['fridge repair', 'tv repair', 'washing machine repair', 'electronics repair'],
+    'generator repair': ['generator', 'power backup', 'genset'],
+
+    'shoe repair': ['cobbler', 'shoe mending', 'leather repair'],
+    'laundry service': ['washing', 'dry cleaning', 'ironing'],
+    'pest control': ['fumigation', 'termites', 'insect control'],
+    'locksmith': ['keys', 'locks', 'lockout'],
+    'plaster': ['plastering', 'wall finishing', 'rendering'],
   };
 
   String get _providerSectionTitle =>
@@ -174,9 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
         }
 
         final aliases = categorySearchAliases[category];
-        if (aliases != null) {
-          return aliases.any((alias) => alias.toLowerCase().contains(query));
-        }
+        return aliases != null && aliases.any((alias) => query.contains(alias));
 
         return false;
       }
