@@ -1,553 +1,696 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
   <title>Ur Plug</title>
-  <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" media="screen" rel="stylesheet" type="text/css" />
-  <link href="css/frame.css" media="screen" rel="stylesheet" type="text/css" />
-  <link href="css/controls.css" media="screen" rel="stylesheet" type="text/css" />
-  <link href="css/custom.css" media="screen" rel="stylesheet" type="text/css" />
-  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-  <link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,700' rel='stylesheet' type='text/css'>
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700" rel="stylesheet">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="js/menu.js"></script>
-  <script src="js/footer.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fontawesome.com" rel="stylesheet" type="text/css" />
+  <link href="https://googleapis.com" rel="stylesheet">
+  
   <style>
-    .menu-index {
-      color: rgb(255, 255, 255) !important;
-      opacity: 1 !important;
-      font-weight: 700 !important;
+    /* Premium Modern App Reset & Layout */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    
-    /* Modern, clean layout utilities for media alignment scaled for short text paragraphs */
-    .media-split-container {
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f19;
+      color: #f8fafc;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Abstract Tech Grid Background Effect */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1000px;
+      background-image: 
+        linear-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
+      mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+      z-index: -1;
+    }
+
+    /* Floating Premium Navigation */
+    .app-nav {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 1200px;
+      height: 60px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 30px;
       display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
       align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      z-index: 1000;
+    }
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-links {
+      display: flex;
       gap: 30px;
-      margin-top: 15px;
+      list-style: none;
     }
-    
-    .media-split-text {
-      flex: 1 1 350px;
+    .nav-links a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
     }
-    
-    .media-split-image {
-      flex: 0 0 180px; /* Locked to match the compact dimensions requested */
+    .nav-links a:hover {
+      color: #38bdf8;
+    }
+
+    /* Premium Landing Hero Area */
+    .hero-section {
+      padding: 180px 20px 100px;
+      text-align: center;
+      max-width: 950px;
+      margin: 0 auto;
+      position: relative;
+    }
+    /* Neon Glow Behind Text */
+    .hero-glow {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(56, 189, 248, 0) 70%);
+      filter: blur(40px);
+      z-index: -1;
+    }
+    .hero-title {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.7;
+    }
+
+    /* Dynamic Landing App Features Layout */
+    .content-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px 120px;
+    }
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 50px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title span {
+      color: #38bdf8;
+    }
+
+    /* Glassmorphism Feature Grid Blocks */
+    .feature-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 50px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+    .feature-card.reverse {
+      flex-direction: row-reverse;
+    }
+    .feature-info {
+      flex: 1;
+    }
+    .feature-info h3 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 16px;
+    }
+    .feature-info p {
+      color: #94a3b8;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    /* Premium Phone Frame Shadow Containers */
+    .feature-media {
+      flex: 0 0 200px;
       display: flex;
       justify-content: center;
     }
-
-    .media-split-image img {
+    .app-screenshot, .app-video {
       width: 100%;
+      max-width: 200px;
       height: auto;
-      max-width: 180px !important; /* Compact scaling prevents the app view from blowing up */
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 20px;
+      border: 4px solid #1e293b;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        0 0 40px 0 rgba(37, 99, 235, 0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover .app-screenshot,
+    .feature-card:hover .app-video {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 0.8),
+        0 0 50px 5px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Interactive UI Presentation Split Grids */
+    .dual-showcase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-top: 25px;
+    }
+    .showcase-box {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    .showcase-box h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Target UI utility styles for active dynamic single view mapping tabs toggling */
+    .tab-view-block {
+      display: none;
     }
   </style>
 </head>
 
+
 <body>
-  <div class="menu-container"></div>
-  <div class="content-container">
-    <!-------------------------------------------------------------------------------------------->
-    <!--Start Header-->
-    <div class="banner" style="background: url('img/logo.png') no-repeat center; background-size: cover; height: 300px;"></div>
-    <div class="banner">
-      <div class="banner-table flex-column">
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-             <h2 class="add-top-margin-small">Ur Plug &mdash; Making Service Discovery Easier</h2>
-            <p class="text">
-              Right now in Uganda, finding someone reliable to fix a pipe, wire a house, or decorate an event usually depends on word of mouth or endless scrolling through social media. We built Ur Plug to change that. The app provides a centralized platform that accommodates both formal businesses and informal, small-scale service providers, giving them an affordable way to be discovered online. At the same time, it gives consumers a smart recommendation system and a built-in messaging setup to chat with providers safely before making an agreement.
-            </p>
+
+  <!-- Floating Header Nav -->
+  <nav class="app-nav">
+    <div class="nav-logo" style="cursor: pointer;" onclick="showTab('hero-home', document.querySelector('.nav-links a'))">
+      <i class="fas fa-plug"></i> Ur Plug
+    </div>
+    <ul class="nav-links">
+      <li><a href="javascript:void(0)" onclick="showTab('hero-home', this)">Overview</a></li>
+      <li><a href="javascript:void(0)" onclick="showTab('onboarding', this)">Onboarding</a></li>
+      <li><a href="javascript:void(0)" onclick="showTab('dashboards', this)">Dashboards</a></li>
+      <li><a href="javascript:void(0)" onclick="showTab('features', this)">Features</a></li>
+      <li><a href="javascript:void(0)" onclick="showTab('demo', this)">Live Demo</a></li>
+      <li><a href="javascript:void(0)" onclick="showTab('team', this)">Creators</a></li>
+    </ul>
+  </nav>
+
+  <!-- Modern Start-up Central Hero (Overview View Block) -->
+  <header class="hero-section tab-view-block" id="hero-home">
+    <div class="hero-glow"></div>
+    <h1 class="hero-title">Ur Plug &mdash; Making Service Discovery Easier</h1>
+    <p class="hero-subtitle">
+      Right now in Uganda, finding someone reliable to fix a pipe, wire a house, or decorate an event usually depends on word of mouth or endless scrolling through social media. We built Ur Plug to change that. The app provides a centralized platform that accommodates both formal businesses and informal, small-scale service providers, giving them an affordable way to be discovered online. At the same time, it gives consumers a smart recommendation system and a built-in messaging setup to chat with providers safely before making an agreement.
+    </p>
+        <!-- ========================================================================== -->
+    <!-- DYNAMIC VALUE METRICS GRID (ENTRIES FOR UGANDAN MARKETPLACE IMPACT)         -->
+    <!-- ========================================================================== -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 900px; margin: 50px auto 0; text-align: left;">
+      
+      <!-- Metrics Card 1 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; display: flex; align-items: flex-start; gap: 15px;">
+        <div style="width: 40px; height: 40px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+          <i class="fas fa-search-location"></i>
+        </div>
+        <div>
+          <h4 style="font-size: 13px; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Service Discovery</h4>
+          <p style="font-size: 14px; color: #ffffff; line-height: 1.4; margin: 0;">Localized provider filtering across active districts.</p>
+        </div>
+      </div>
+
+      <!-- Metrics Card 2 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; display: flex; align-items: flex-start; gap: 15px;">
+        <div style="width: 40px; height: 40px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div>
+          <h4 style="font-size: 13px; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Safe Interaction</h4>
+          <p style="font-size: 14px; color: #ffffff; line-height: 1.4; margin: 0;">Built-in messaging engine to safely negotiate terms.</p>
+        </div>
+      </div>
+
+      <!-- Metrics Card 3 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; display: flex; align-items: flex-start; gap: 15px;">
+        <div style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.1); color: #a855f7; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div>
+          <h4 style="font-size: 13px; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Formal Integration</h4>
+          <p style="font-size: 14px; color: #ffffff; line-height: 1.4; margin: 0;">Affordable web presence for small-scale traders.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================== -->
+    <!-- INTERACTIVE NAVIGATION PROMPTS (CLICKABLE CALL-TO-ACTION LINKS)            -->
+    <!-- ========================================================================== -->
+    <div style="margin-top: 60px; text-align: center;">
+      <p style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">Explore Portal Ecosystem Core Segments</p>
+      
+      <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        
+        <button onclick="showTab('onboarding', document.querySelectorAll('.nav-links a')[1])" style="background: #2563eb; color: #ffffff; border: none; padding: 12px 24px; font-family: inherit; font-size: 14px; font-weight: 600; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.2s, background 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.background='#1d4ed8';" onmouseleave="this.style.transform='translateY(0)'; this.style.background='#2563eb';">
+          Access Onboarding Gateway <i class="fas fa-arrow-right" style="font-size: 12px;"></i>
+        </button>
+
+        <button onclick="showTab('dashboards', document.querySelectorAll('.nav-links a')[2])" style="background: rgba(255,255,255,0.05); color: #ffffff; border: 1px solid rgba(255,255,255,0.1); padding: 12px 24px; font-family: inherit; font-size: 14px; font-weight: 600; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.2s, background 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'; this.style.background='rgba(255,255,255,0.1)';" onmouseleave="this.style.transform='translateY(0)'; this.style.background='rgba(255,255,255,0.05)';">
+          <i class="fas fa-th-large" style="color: #38bdf8;"></i> View System Workspaces
+        </button>
+
+      </div>
+    </div>
+
+  </header>
+
+  <!-- Master Layout Core Content Container -->
+  <main class="content-wrapper">
+
+    <!-- ========================================================================== -->
+    <!-- ONBOARDING SECTION (SIGNUP & LOGIN SCREEN VIEW BLOCK)                      -->
+    <!-- ========================================================================== -->
+    <section id="onboarding" class="tab-view-block" style="display: none;">
+      <h2 class="section-title">Secure Platform <span>Access Control</span></h2>
+
+      <!-- Customer Signup Screen -->
+      <div class="feature-card">
+        <div class="feature-info">
+          <h3>Customer Signup Screen</h3>
+          <p>The customer signup process allows users to quickly create an account using their phone number, email address and district. This profile lets them search for nearby service providers, view ratings, and safely message the service providers.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/customersignup.png" alt="Customer Signup Interface">
+        </div>
+      </div>
+
+      <!-- Business Signup Screen -->
+      <div class="feature-card reverse">
+        <div class="feature-info">
+          <h3>Business Signup Screen</h3>
+          <p>The business signup flow captures key operational details for service providers. Providers can list their services, location and contact information.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/businesssignup.png" alt="Business Signup Interface">
+        </div>
+      </div>
+
+      <!-- Login Screen -->
+      <div class="feature-card">
+        <div class="feature-info">
+          <h3>Login Screen</h3>
+          <p>The login screen provides a secure entry point for all users. Customers and service providers can log in quickly using their registered credentials to access their specific system settings and tools.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/login.png" alt="Secure Gateway Login Screen">
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================== -->
+    <!-- APP DASHBOARDS SECTION (CUSTOMER & PROVIDER CORE TERMINALS)                -->
+    <!-- ========================================================================== -->
+    <section id="dashboards" class="tab-view-block" style="display: none;">
+      <h2 class="section-title">Application <span>Management Command Panels</span></h2>
+
+      <div class="feature-card" style="flex-direction: column; align-items: stretch;">
+        <div style="margin-bottom: 15px;">
+          <h3>App Dashboards</h3>
+          <p>Ur Plug features custom dashboard designs tailored for both customers and professional providers. These interfaces offer instant access to booking histories, active job notifications, and account details.</p>
+        </div>
+
+        <div class="dual-showcase-row">
+          <div class="showcase-box">
+            <h4>Customer View</h4>
+            <div style="display: flex; justify-content: center; margin-top: 15px;">
+              <img class="app-screenshot" src="img/customerdashboard.png" alt="Customer Dashboard Workspace">
+            </div>
+          </div>
+          <div class="showcase-box">
+            <h4>Business View</h4>
+            <div style="display: flex; justify-content: center; margin-top: 15px;">
+              <img class="app-screenshot" src="img/providerdashboard.png" alt="Business Dashboard Workspace">
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <!--End Header-->
-    <!-------------------------------------------------------------------------------------------->
-    <div class="content">
-      <div class="content-table flex-column">
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Intro-->
-        <div class="flex-row"></div>
-          <div class="flex-item flex-column">
-            <p class="text text-large">
-              <a target="_blank" href="javascript:void(0)">https://github.com/Kiden-SOC</a>, KIDEN SARAH RUTH LUBANG<br>
-              <a target="_blank" href="javascript:void(0)">https://github.com/AcenPatienceRuth</a>, ACEN PATIENCE RUTH<br>
-              <a target="_blank" href="javascript:void(0)">https://github.com/Elle-anorrr</a>, ATIM ELEANOR<br>
-              <a target="_blank" href="javascript:void(0)">https://github.com/jessielillians-crypto</a>, NAKAYIWA JESSIE LILLIAN<br>
-              <a target="_blank" href="javascript:void(0)">https://github.com/dhaev256</a>, KIMULI DAVID<br>
-              <a target="_blank" href="javascript:void(0)">Flutter</a><br>
-              <a target="_blank" href="javascript:void(0)">Makerere University</a><br>
-              <a target="_blank" href="javascript:void(0)">COMPUTER SCIENCE DEPARTMENT</a><br>
-              <a target="_blank" href="javascript:void(0)">GROUP 12</a><br>
-              <a target="_blank" href="javascript:void(0)">Kampala, Uganda</a>
-            </p>
-          </div>
-        </div>
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text add-top-margin">
-              Ur Plug brings customers and reliable local service providers together in one place. By using simple search tools and an easy-to-use interface, we make it simple for businesses and clients to connect and chat safely.
-            </p>
-            <h3>Table of Content</h3>
-             <p>
-              View our project repository on <a target="_blank" href="https://github.com/Kiden-SOC/Ur-Plug.github.io">GitHub</a>.
-            </p>
-            <ul>
-              <li><a href="#customer-signup">Customer Signup Screen</a></li>
-              <li><a href="#business-signup">Business Signup Screen</a></li>
-              <li><a href="#login-screen">Login Screen</a></li>
-              <li><a href="#customer-dashboard">Customer Dashboard</a></li>
-              <li><a href="#business-dashboard">Business Dashboard</a></li>
-              <li><a href="#admin-dashboard">Admin Dashboard</a></li>
-              <li><a href="#request-service">Request Service Screen</a></li>
-              <li><a href="#chat-screen">Chat Screen</a></li>
-              <li><a href="#application-interaction">Application Interaction</a></li>
-              <li><a href="#project-milestones">Project Milestones</a></li>
-            </ul>
-          </div>
-        </div>
-        <!--End Intro-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Customer Signup Screen-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="customer-signup">Customer Signup Screen</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  The customer signup process allows users to quickly create an account using their phone number, email address and district. This profile lets them search for nearby service providers, view ratings, and safely message the service providers.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- IMAGES PLACEHOLDER: Save your friend's customer signup screenshot as "customer-signup.png" inside the "img" folder -->
-                <img class="image center" src="img/customersignup.png" alt="Customer Signup Screen" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Customer Signup Screen-->
+    </section>
 
+    <!-- ========================================================================== -->
+    <!-- CORE FEATURES ECOSYSTEM TAB VIEW MAPPING                                  -->
+    <!-- ========================================================================== -->
+    <section id="features" class="tab-view-block" style="display: none;">
+      <h2 class="section-title">Explore the <span>Platform Ecosystem</span></h2>
 
-        <!-------------------------------------------------------------------------------------------->
-
-        <!--Start Business Signup Screen-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="business-signup">Business Signup Screen</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  The business signup flow captures key operational details for service providers. Providers can list their services, location and contact information.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- IMAGES PLACEHOLDER: Save your friend's business signup screenshot as "business-signup.png" inside the "img" folder -->
-                <img class="image center" src="img/businesssignup.png" alt="Business Signup Screen" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
+      <!-- Request Service Screen Block -->
+      <div class="feature-card">
+        <div class="feature-info">
+          <h3>Request Service Screen</h3>
+          <p>The Service Request screen simplifies how customers can obtain services from the providers. They easily type where they want the service, when they need it and describe what it is that they exactly need by providing brief notes.</p>
+          <p>Providers instantly receive a notification with these structural details, allowing them to review the scope of work and determine if they are available before any commitment is made.</p>
         </div>
-        <!--End Business Signup Screen-->
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Login Screen Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="login-screen">Login Screen</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  The login screen provides a secure entry point for all users. Customers and service providers can log in quickly using their registered credentials to access their specific system settings and tools.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- IMAGES PLACEHOLDER: Save your friend's login screenshot as "login-screen.png" inside the "img" folder -->
-                <img class="image center" src="img/login.png" alt="Ur Plug Login Screen" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/requestservice.png" alt="Request Service Mockup">
         </div>
-        <!--End Login Screen Section-->
-
-               <!--Start Dashboards Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="customer-dashboard">App Dashboards</h2>
-            <!-- Note: We use "customer-dashboard" as the ID here so your menu anchor links directly to this visual dashboard zone -->
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  Ur Plug features custom dashboard designs tailored for both customers and professional providers. These interfaces offer instant access to booking histories, active job notifications, and account details.
-                </p>
-              </div>
-              <div class="media-split-text" style="flex: 2 1 600px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                <!-- Side-by-Side Dashboard Previews -->
-                <div style="flex: 1 1 250px; text-align: center;">
-                  <!-- DASHBOARD PLACEHOLDER 1: Save your friend's screenshot as "customer-dashboard.png" in the "img" folder -->
-                  <img class="image" src="img/customerdashboard.png" alt="Customer Dashboard Screen" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  <p class="image-caption" style="margin-top: 5px;">Customer Dashboard Interface</p>
-                </div>
-                <div style="flex: 1 1 250px; text-align: center;">
-                  <!-- DASHBOARD PLACEHOLDER 2: Save your friend's screenshot as "business-dashboard.png" in the "img" folder -->
-                  <!-- We add the business-dashboard ID here so clicking the link scrolls directly to this side of the row -->
-                  <img class="image" src="img/providerdashboard.png" alt="Business Dashboard Screen" id="business-dashboard" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  <p class="image-caption" style="margin-top: 5px;">Business Dashboard Interface</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Dashboards Section-->
-
-        <!-------------------------------------------------------------------------------------------->
-
-        <!--Start Request Service Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="request-service">Request Service Screen</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  The Service Request screen simplifies how customers can obtain services from the providers. They easily type where they want the service, when they need it and describe what it is that they exactly need by providing brief notes.
-                </p>
-                <p class="text">
-                  Providers instantly receive a notification with these structural details, allowing them to review the scope of work and determine if they are available before any commitment is made.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- REQUEST SERVICE PLACEHOLDER: Save your friend's screenshot as "request-service.png" in the "img" folder -->
-                <img class="image center" src="img/requestservice.png" alt="Request Service Layout" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Request Service Section-->
-
-       <!-------------------------------------------------------------------------------------------->
-              </div>
-    </div>
-    
-    <div class="content">
-      <div class="content-table flex-column">
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Chat Screen Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="chat-screen" class="no-top-margin">In-App Chat Screen</h2>
-            <hr>
-            <div class="media-split-container" style="align-items: flex-start;">
-              <div class="media-split-text">
-                <p class="text">
-                  Our integrated chat layout supports coversations between the customers and service providers where they can talk about prices and urgency of the service. This allows the customers to thoroughly detail their maintenance situations before finalizing an assignment.
-                </p>
-              </div>
-              <div class="media-split-text" style="flex: 2 1 600px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                <div style="flex: 1 1 250px; text-align: center;">
-                  <p class="text text-center graph-title" style="margin-bottom: 8px;">
-                    Customer Chat Layout Preview
-                  </p>
-                  <!-- CHAT PLACEHOLDER 1: Save customer chat view screenshot as "customer-chat.png" in the "img" folder -->
-                  <img class="image center" src="img/customerchat.png" alt="Customer Chat View" style="width: 100%; max-width: 160px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                </div>
-                <div style="flex: 1 1 250px; text-align: center;">
-                  <p class="text text-center graph-title" style="margin-bottom: 8px;">
-                    Business Chat Layout Preview
-                  </p>
-                  <!-- CHAT PLACEHOLDER 2: Save business chat view screenshot as "business-chat.png" in the "img" folder -->
-                  <div class="scrollable-image-container center" style="width: 100%; max-width: 160px !important; margin: 0 auto;">
-                    <img class="scrollable-image center" src="img/businesschat.png" alt="Business Chat View" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Chat Screen Section-->
-        
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Admin Dashboard Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="admin-dashboard">Admin Dashboard</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  The internal admin panel provides system administrators with real-time insight into marketplace interactions, user growth rates, and account validation verification reports across the app.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- REQUEST SERVICE PLACEHOLDER: Save your friend's screenshot as "request-service.png" in the "img" folder -->
-                <img class="image center" src="img/admindashboard.png" alt="Admin Dashboard" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-------------------------------------------------------------------------------------------->
-        <!--Start Provider Profile & Account Details Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <!-- We tie an ID here to handle the final account elements from your checklist -->
-            <h2 id="account-details">Provider Account Details</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  Service providers can completely configure their digital storefront profiles through their account settings. This includes modifying service listings, editing geographic locations, and updating their bio details.
-                </p>
-                <p class="text">
-                  All profile updates undergo instant structural validations to ensure that data remains consistent across client searches, guaranteeing clean marketplace records.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- ACCOUNT BANNER PLACEHOLDER: Save your account settings preview graphic as "account-details.png" in your "img" folder -->
-                <img class="image center" src="img/providersettings.png" alt="Business Details" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Provider Account Details Section-->
-       <!-------------------------------------------------------------------------------------------->
       </div>
-    </div>
-    
-    <!-- Feature Breakdown Mid-Banner -->
-    <div class="banner">
-      <div class="banner-table flex-column">
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id= "application-interaction" class="add-top-margin-small">Ur Plug Application Interaction</h2>
-            <p class="text">
-              See how our app works in practice. Below is an interface showing how a user can seamlessly search for a service by just entering a keyword. 
-            </p>
+
+      <!-- In-App Chat Screen Layout Block -->
+      <div class="feature-card reverse">
+        <div class="feature-info">
+          <h3>In-App Chat Screen</h3>
+          <p>Our integrated chat layout supports conversations between the customers and service providers where they can talk about prices and urgency of the service. This allows the customers to thoroughly detail their maintenance situations before finalizing an assignment.</p>
+          
+          <div class="dual-showcase-row">
+            <div class="showcase-box">
+              <h4>Customer Chat</h4>
+              <img class="app-screenshot" src="img/customerchat.png" alt="Customer Side View">
+            </div>
+            <div class="showcase-box">
+              <h4>Business Chat</h4>
+              <img class="app-screenshot" src="img/businesschat.png" alt="Business Side View">
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="content">
-        <!-- Side-by-Side Video Demonstration Row -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  <strong>Live System Flow:</strong> This demo video shows how our Flutter frontend processes live database endpoints. It captures the keyword, checks the database and reflects services that contain that keyword.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- VIDEO PLACEHOLDER: If you have a Flutter app screen recording video, save it as "app-demo.mp4" in your "vid" folder -->
-                <video preload controls autoplay loop muted playsinline style="width: 100%; max-width: 180px !important; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  <source src="img/searchdemo.mp4" type="video/mp4">
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </div>
-          </div>
+
+      <!-- Admin Dashboard Screen Block -->
+      <div class="feature-card">
+        <div class="feature-info">
+          <h3>Admin Dashboard</h3>
+          <p>The internal admin panel provides system administrators with real-time insight into marketplace interactions, user growth rates, and account validation verification reports across the app.</p>
         </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/admindashboard.png" alt="Admin Control Board">
+        </div>
+      </div>
+
+
+      <!-- Provider Storefront Configuration Block -->
+      <div class="feature-card reverse">
+        <div class="feature-info">
+          <h3>Provider Account Details</h3>
+          <p>Service providers can completely configure their digital storefront profiles through their account settings. This includes modifying service listings, editing geographic locations, and updating their bio details.</p>
+          <p>All profile updates undergo instant structural validations to ensure that data remains consistent across client searches, guaranteeing clean marketplace records.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/providersettings.png" alt="Provider Account Interface">
+        </div>
+      </div>
+
+      <!-- Provider Detail Screen Block -->
+      <div class="feature-card">
+        <div class="feature-info">
+          <h3>Provider Detail Screen</h3>
+          <p>When a consumer selects a nearby worker, they are greeted with a clean profile layout. This page showcases the artisan's cumulative star ratings, verified past work descriptions, customer feedback notes, and service listings.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/providerdetail.png" alt="Provider Detail View Screen">
+        </div>
+      </div>
+
+      <!-- Customer Account Details Block -->
+      <div class="feature-card reverse">
+        <div class="feature-info">
+          <h3>Customer Account Details</h3>
+          <p>Through the Account Details layout, service providers can update their operational status, upload verification documentation, manage their digital service catalog offerings, and check their mobile money transaction records safely.</p>
+        </div>
+        <div class="feature-media">
+          <img class="app-screenshot" src="img/customerprofile.png" alt="Account Details Screen">
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================== -->
+    <!-- HIGH-CONRAST LIVE SYSTEM INTERACTION ENGINE (DARK MODE HERO COMPONENT)     -->
+    <!-- ========================================================================== -->
+    <section id="demo" class="tab-view-block" style="display: none;">
+      <h2 class="section-title" style="margin-top: 40px; margin-bottom: 20px;">System <span>Interaction Engine</span></h2>
+      
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-radius: 24px; padding: 50px; color: #ffffff; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3); position: relative; overflow: hidden; margin-bottom: 50px;">
         
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <p class="text">
+        <!-- Asymmetric Grid: Text Context vs Mobile Phone Housing -->
+        <div style="display: flex; gap: 50px; align-items: center; flex-wrap: wrap; position: relative; z-index: 2;">
+          
+          <!-- Left Column: Product Positioning & Value Proposition -->
+          <div style="flex: 1 1 450px;">
+            <div style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 6px 12px; border-radius: 50px; display: inline-block; font-size: 12px; font-weight: 700; text-transform:uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+              <i class="fas fa-bolt" style="margin-right: 6px;"></i> Live Frontend Architecture
+            </div>
+            
+            <h3 style="font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 20px;">
+              Ur Plug Application Interaction
+            </h3>
+            
+            <p style="color: #94a3b8; font-size: 16px; line-height: 1.7; margin-bottom: 25px;">
+              See how our app works in practice. Below is an interface showing how a user can seamlessly search for a service by just entering a keyword.
+            </p>
+
+            <!-- Interactive Feature Pill Container -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; margin-bottom: 25px;">
+              <p style="color: #f1f5f9; font-size: 14px; line-height: 1.6; margin: 0;">
+                <strong style="color: #38bdf8; display: block; margin-bottom: 6px; font-size: 15px;">
+                  <i class="fas fa-database"></i> Live System Flow:
+                </strong> 
+                This demo video shows how our Flutter frontend processes live database endpoints. It captures the keyword, checks the database and reflects services that contain that keyword.
+              </p>
+            </div>
+
+            <p style="color: #38bdf8; font-size: 15px; font-weight: 600; line-height: 1.6; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span style="width: 8px; height: 8px; background: #38bdf8; border-radius: 50%; display: inline-block; box-shadow: 0 0 12px #38bdf8;"></span>
               By packaging all these functional capabilities into a unified app structure, Ur Plug makes informal skills highly discoverable.
             </p>
           </div>
-        </div>
-        <!--End Application Media Section-->
 
-        
-        <!--Start Provider Detail View-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="provider-detail">Provider Detail Screen</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  When a consumer selects a nearby worker, they are greeted with a clean profile layout. This page showcases the artisan's cumulative star ratings, verified past work descriptions, customer feedback notes, and service listings.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- PROVIDER DETAIL PLACEHOLDER: Save your screenshot as "provider-detail.png" in your "img" folder -->
-                <img class="image center" src="img/providerdetail.png" alt="Provider Detail View Screen" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!--Start Account Details Section-->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="account-details">Customer Account Details</h2>
-            <hr>
-            <div class="media-split-container">
-              <div class="media-split-text">
-                <p class="text">
-                  Through the Account Details layout, service providers can update their operational status, upload verification documentation, manage their digital service catalog offerings, and check their mobile money transaction records safely.
-                </p>
-              </div>
-              <div class="media-split-image">
-                <!-- ACCOUNT DETAILS PLACEHOLDER: Save your screenshot as "account-details.png" in your "img" folder -->
-                <img class="image center" src="img/customerprofile.png" alt="Account Details Screen" style="max-width: 180px !important;">
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--End Application Feature Screens-->
-        <!-------------------------------------------------------------------------------------------->
-        <div class="flex-row">
-          <div class="flex-item flex-column full-width">
-            <h2 id="project-milestones">Project Development Milestones</h2>
-            <hr>
-          </div>
-        </div>
-                <!-- Milestone Item 1 -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
-              <div class="media-split-image" style="flex: 0 0 80px;">
-                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
-              </div>
-              <div class="media-split-text" style="flex: 1 1 400px;">
-                <p class="text" style="margin-top: 0;">
-                  <a class="highlight-text" href="javascript:void(0)">Phase 1: UI Mockups & Mobile Architecture Design</a><br>
-                  We began by designing the complete user journey flows for both consumers and the service providers using Flutter layout tools. We built the baseline navigation controls, state mechanics, and multi-role screen models in Dart to ensure that navigating between client tools and platform management settings is completely seamless and easy to use.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Milestone Item 2 -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
-              <div class="media-split-image" style="flex: 0 0 80px;">
-                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
-              </div>
-              <div class="media-split-text" style="flex: 1 1 400px;">
-                <p class="text" style="margin-top: 0;">
-                  <a class="highlight-text" href="javascript:void(0)">Phase 2: Frontend Layouts & Real-Time Interaction</a><br>
-                  We built the responsive user interfaces for the signup screens, dashboards, and provider profiles. We implemented Flutter's native setState framework to handle local screen information dynamically and integrated asynchronous Dart streams to support our safe messaging screen models, which allow customers and providers to talk instantly about prices or urgency.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Milestone Item 3 -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
-              <div class="media-split-image" style="flex: 0 0 80px;">
-                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
-              </div>
-              <div class="media-split-text" style="flex: 1 1 400px;">
-                <p class="text" style="margin-top: 0;">
-                  <a class="highlight-text" href="javascript:void(0)">Phase 3: Firebase Database Integration & Query Logic</a><br>
-                  We connected the application forms to secure data schemas in Firebase to manage accounts and archive encrypted messaging histories safely. We structured Cloud Firestore collections to track active job notifications, location information, and ratings, while using Firebase Authentication to let customers and service providers log in quickly using their registered credentials.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          <!-- Right Column: Premium Matte-Black Device Shell for Video Wrapper -->
+          <div style="flex: 0 0 260px; margin: 0 auto; display: flex; justify-content: center; position: relative;">
+ 
+                    <!-- Glossy Radial Glow Anchor Behind Smartphone Mockup -->
+          <div style="position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(37, 99, 235, 0.2) 0%, rgba(0,0,0,0) 70%); top: 50%; left: 50%; transform: translate(-20%, -50%); z-index: 1;"></div>
 
-        <!-- Milestone Item 4 -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <div class="media-split-container" style="align-items: flex-start; gap: 20px;">
-              <div class="media-split-image" style="flex: 0 0 80px;">
-                <img class="image" src="img/logo.png" alt="Milestone Icon" style="width: 100%; max-width: 80px !important; border-radius: 4px;">
-              </div>
-              <div class="media-split-text" style="flex: 1 1 400px;">
-                <p class="text" style="margin-top: 0;">
-                  <a class="highlight-text" href="javascript:void(0)">Phase 4: Device Testing & System Optimization</a><br>
-                  We executed end-to-end device testing across varied network connection speeds to ensure our system stays low-data and completely reliable for small-scale traders in local Ugandan markets. We checked our database endpoints during keyword searches to verify that profile data updates undergo instant validations and reflect cleanly across client interfaces.
-                </p>
-              </div>
+          <!-- Smartphone Chassis Wrapper Frame -->
+          <div style="width: 230px; background: #000000; padding: 10px; border-radius: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); border: 4px solid #334155; position: relative; z-index: 2; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);" 
+               onmouseenter="this.style.transform='scale(1.04) translateY(-5px)'" 
+               onmouseleave="this.style.transform='scale(1) translateY(0)'">
+            
+            <!-- Ear Speaker / Top Camera Notch Housing Sensor Overlay -->
+            <div style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 70px; height: 16px; background: #000000; border-radius: 20px; z-index: 10; display: flex; align-items: center; justify-content: center;">
+              <span style="width: 4px; height: 4px; background: #1e293b; border-radius: 50%;"></span>
             </div>
-          </div>
-        </div>
-      <!-------------------------------------------------------------------------------------------->
-        
-        <!-- Team Members Structural Grid -->
-        <div class="flex-row">
-          <div class="flex-item flex-column">
-            <h2 id="team-members">Group 12 Project Team</h2>
-            <hr>
-            <p class="text">
-              Ur Plug was developed by Computer Science students at Makerere University to address service discoverability limitations across Uganda.
-            </p>
-          </div>
-        </div>
-        
-        <div class="gallery add-top-margin-small add-bottom-margin-small" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;">
-          <!-- Member 1 -->
-          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
-            <h3>KIDEN SARAH RUTH LUBANG</h3>
-            <div>Frontend Developer</div>
-            <div>
-              <a href="https://github.com/Kiden-SOC" target="_blank">GitHub Profile</a>
-            </div>
-          </div>
-          
-          <!-- Member 2 -->
-          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
-            <h3>ACEN PATIENCE RUTH</h3>
-            <div>Backend Developer</div>
-            <div>
-              <a href="https://github.com" target="_blank">GitHub Profile</a>
-            </div>
-          </div>
-          
-          <!-- Member 3 -->
-          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
-            <h3>ATIM ELEANOR</h3>
-            <div>Backend Developer</div>
-            <div>
-              <a href="https://github.com" target="_blank">GitHub Profile</a>
-            </div>
-          </div>
-          
-          <!-- Member 4 -->
-          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
-            <h3>NAKAYIWA JESSIE LILLIAN</h3>
-            <div>Backend Developer</div>
-            <div>
-              <a href="https://github.com" target="_blank">GitHub Profile</a>
+
+            <!-- Video Player Embedded Context Window Mapping -->
+            <div style="border-radius: 32px; overflow: hidden; background: #111827; position: relative; aspect-ratio: 9/19.5;">
+              <video preload="auto" controls autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <source src="img/searchdemo.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
 
-          <!-- Member 5 -->
-          <div class="flex-column" style="flex: 1 1 200px; min-width: 200px; box-sizing: border-box; padding: 10px;">
-            <h3>KIMULI DAVID</h3>
-            <div>Frontend Developer</div>
-            <div>
-              <a href="https://github.com" target="_blank">GitHub Profile</a>
-            </div>
-          </div>
         </div>
-        <!--End Gallery-->
-       
-        <!-------------------------------------------------------------------------------------------->
+
+      </div>
+
+      <!-- Tech Decorative Vector Accent Matrix lines -->
+      <div style="position: absolute; bottom: -20px; right: -20px; font-size: 180px; color: rgba(255,255,255,0.02); pointer-events: none; font-family: monospace; font-weight: 900; z-index: 1;">
+        &lt;/&gt;
       </div>
     </div>
-    <!-- The template's dynamic script containers inject the master footer file content cleanly here -->
-    <div class="footer-container"></div>
-  </div>
-</body>
+  </section>
 
+  <!-- Wrapping Creator Profiles inside the matching dynamic layout Tab ID container -->
+  <section id="team" class="tab-view-block" style="display: none;">
+    <!-- ========================================================================== -->
+    <!-- ENGINEERING ARCHITECTS & SYSTEM CREATORS SECTION                           -->
+    <!-- ========================================================================== -->
+    <h2 class="section-title">Behind the <span>Architecture</span></h2>
+    
+    <!-- Team Rationale & Context Summary -->
+    <div style="max-width: 750px; margin-bottom: 40px;">
+      <p style="font-size: 15px; color: #475569; line-height: 1.7; margin: 0;">
+        Ur Plug was engineered by Group 12 Computer Science students at Makerere University to directly solve service discoverability limitations across Uganda, bridging structural gaps for formal businesses and small-scale service providers alike.
+      </p>
+    </div>
+
+    <!-- Production Grid: 5 Creators Styled Card Interfaces -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px;">
+      
+      <!-- Creator 1 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.3s ease, border-color 0.3s ease;" 
+           onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='#38bdf8'" 
+           onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255, 255, 255, 0.05)'">
+        <div style="width: 50px; height: 50px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 18px; font-weight: 700;">
+          KS
+        </div>
+        <h3 style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px; text-transform: uppercase;">Kiden Sarah Ruth Lubang</h3>
+        <p style="font-size: 12px; color: #38bdf8; font-weight: 600; background: rgba(56, 189, 248, 0.1); padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 15px;">
+          Frontend Developer
+        </p>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+          <a href="https://github.com/Kiden-SOC" target="_blank" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fab fa-github" style="color: #ffffff; font-size: 15px;"></i> GitHub Profile
+          </a>
+        </div>
+      </div>
+
+      <!-- Creator 2 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.3s ease, border-color 0.3s ease;" 
+           onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='#38bdf8'" 
+           onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255, 255, 255, 0.05)'">
+        <div style="width: 50px; height: 50px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 18px; font-weight: 700;">
+          AP
+        </div>
+        <h3 style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px; text-transform: uppercase;">Acen Patience Ruth</h3>
+        <p style="font-size: 12px; color: #34d399; font-weight: 600; background: rgba(52, 211, 153, 0.1); padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 15px;">
+          Backend Developer
+        </p>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+          <a href="https://github.com/AcenPatienceRuth" target="_blank" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fab fa-github" style="color: #ffffff; font-size: 15px;"></i> GitHub Profile
+          </a>
+        </div>
+      </div>
+
+      <!-- Creator 3 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.3s ease, border-color 0.3s ease;" 
+           onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='#38bdf8'" 
+           onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255, 255, 255, 0.05)'">
+        <div style="width: 50px; height: 50px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 18px; font-weight: 700;">
+          AE
+        </div>
+        <h3 style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px; text-transform: uppercase;">Atim Eleanor</h3>
+        <p style="font-size: 12px; color: #34d399; font-weight: 600; background: rgba(52, 211, 153, 0.1); padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 15px;">
+          Backend Developer
+        </p>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+          <a href="https://github.com/Elle-anorrr" target="_blank" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fab fa-github" style="color: #ffffff; font-size: 15px;"></i> GitHub Profile
+          </a>
+        </div>
+      </div>
+
+
+            <!-- Creator 4 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.3s ease, border-color 0.3s ease;" 
+           onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='#38bdf8'" 
+           onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255, 255, 255, 0.05)'">
+        <div style="width: 50px; height: 50px; background: rgba(52, 211, 153, 0.1); color: #34d399; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 18px; font-weight: 700;">
+          NL
+        </div>
+        <h3 style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px; text-transform: uppercase;">Nakayiwa Jessie Lillian</h3>
+        <p style="font-size: 12px; color: #34d399; font-weight: 600; background: rgba(52, 211, 153, 0.1); padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 15px;">
+          Backend Developer
+        </p>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+          <a href="https://github.com/jessielillians-crypto" target="_blank" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fab fa-github" style="color: #ffffff; font-size: 15px;"></i> GitHub Profile
+          </a>
+        </div>
+      </div>
+
+      <!-- Creator 5 -->
+      <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: transform 0.3s ease, border-color 0.3s ease;" 
+           onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='#38bdf8'" 
+           onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255, 255, 255, 0.05)'">
+        <div style="width: 50px; height: 50px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 18px; font-weight: 700;">
+          KD
+        </div>
+        <h3 style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px; text-transform: uppercase;">Kimuli David</h3>
+        <p style="font-size: 12px; color: #38bdf8; font-weight: 600; background: rgba(56, 189, 248, 0.1); padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 15px;">
+          Frontend Developer
+        </p>
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+          <a href="https://github.com/dhaev256" target="_blank" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fab fa-github" style="color: #ffffff; font-size: 15px;"></i> GitHub Profile
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  </main>
+
+  <!-- Tab Switching Logic: Keeps layout completely clean -->
+  <script>
+    function showTab(tabId, element) {
+      // 1. Target all structural view block nodes
+      const blocks = document.querySelectorAll('.tab-view-block');
+      blocks.forEach(b => b.style.display = 'none');
+      
+      // 2. Open requested layout context container
+      const selected = document.getElementById(tabId);
+      if (selected) {
+        selected.style.display = 'block';
+      }
+
+      // 3. Reset accent metrics across header options links
+      document.querySelectorAll('.nav-links a').forEach(l => {
+        l.style.color = '#94a3b8';
+        l.style.borderBottom = '2px solid transparent';
+        l.style.paddingBottom = '0';
+      });
+
+      // 4. Focus target dynamic styles focus metrics
+      if (element) {
+        element.style.color = '#38bdf8';
+        element.style.borderBottom = '2px solid #38bdf8';
+        element.style.paddingBottom = '4px';
+      }
+    }
+
+    // Direct browser rendering setup routines
+    document.addEventListener("DOMContentLoaded", function() {
+      showTab('hero-home', document.querySelector('.nav-links a'));
+    });
+  </script>
+
+</body>
 </html>
